@@ -4053,7 +4053,7 @@ function exportSave() {
   const a = document.createElement('a');
   const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   a.href = url;
-  a.download = `挂机武器传说存档_${ts}.json`;
+  a.download = `green_${ts}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
