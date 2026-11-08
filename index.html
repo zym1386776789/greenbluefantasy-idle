@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>挂机武器传说</title>
-<link rel="stylesheet" href="style.css?v=20261108-0410">
+<link rel="stylesheet" href="style.css?v=20261108-1230">
 <style>
 /* 强制覆盖：防止旧缓存样式里的 content-visibility 导致面板内容不渲染 */
 .panel { content-visibility: visible !important; contain-intrinsic-size: auto !important; }
@@ -19,6 +19,7 @@
       <button id="btn-speed" class="active">1x</button>
       <button id="btn-export">📤 导出存档</button>
       <button id="btn-stats">📊 统计</button>
+      <button id="btn-dummy">🎯 木桩</button>
       <button id="btn-import">📥 导入存档</button>
       <input type="file" id="import-file" accept=".json,.txt,application/json,text/plain" style="display:none">
       <button id="btn-reset">🗑 重置存档</button>
@@ -38,10 +39,11 @@
       <div class="stat"><div class="label">区域</div><div class="value wave" id="st-area">1-1</div></div>
       <div class="stat"><div class="label">金币</div><div class="value gold" id="st-gold">0</div></div>
       <div class="stat"><div class="label">收藏点</div><div class="value points" id="st-points">0</div></div>
-      <div class="stat"><div class="label">等级</div><div class="value lv" id="st-level">Lv.1</div><div class="expbar"><div class="expfill" id="exp-fill" style="transform:scaleX(0)"></div></div></div>
+      <div class="stat"><div class="label">等级</div><div class="value lv" id="st-level">Lv.1</div><div class="expbar"><div class="expfill" id="exp-fill" style="transform:scaleX(0)"></div></div><div id="st-exp-need" style="font-size:10px;color:#8a90a8;margin-top:2px;">—</div></div>
       <div class="stat"><div class="label">攻击</div><div class="value atk" id="st-atk">0</div></div>
       <div class="stat"><div class="label">生命</div><div class="value hp" id="st-hp">0</div></div>
       <div class="stat"><div class="label">装备武器</div><div class="value" id="st-equip" style="font-size:15px;">—</div></div>
+      <div class="stat"><div class="label">职业</div><div class="value" id="st-job" style="font-size:15px;">—</div></div>
     </div>
   </div>
 
@@ -54,6 +56,12 @@
         <div class="bar"><div class="fill" id="bar-player" style="transform:scaleX(1)"></div></div>
         <div class="bar atb"><div class="fill" id="atb-player" style="transform:scaleX(0)"></div></div>
         <div class="nums" id="nums-player"></div>
+        <div class="owgi-row" id="owgi-row" style="display:none;">
+          <div class="owgi-bar"><div class="owgi-fill" id="owgi-fill" style="transform:scaleX(0)"></div></div>
+          <button class="owgi-btn" id="btn-owgi" disabled>奥义</button>
+          <label class="owgi-auto"><input type="checkbox" id="ck-owgi-auto"> 自动</label>
+        </div>
+        <div class="job-buffs" id="job-buffs"></div>
       </div>
       <div class="vs">VS</div>
       <div class="fighter monster">
@@ -66,6 +74,10 @@
       </div>
     </div>
     <div class="round" id="battle-round">第 1 回合</div>
+    <div id="escape-row" style="display:none;margin:8px 0;">
+      <button id="btn-escape" class="gold">🏃 逃脱战斗</button>
+      <span class="hint" style="margin-left:8px;">强制结束当前 Boss 战，回到之前所在的地图</span>
+    </div>
 
     <div class="controls">
       <div class="switch-row">
@@ -119,13 +131,28 @@
 
   <div class="panel" id="panel-ach">
     <div class="panel-title">🏆 成就 <span class="hint" id="ach-points">成就点 0 · 掉率 +0%</span> <label class="ach-hide-toggle"><input type="checkbox" id="ck-hide-ach"> 隐藏已完成</label><button class="panel-toggle" data-collapse="ach">收起</button></div>
+    <div class="filter-row" id="ach-rank-filters"></div>
     <div class="ach-grid" id="ach-grid"></div>
+  </div>
+
+  <div class="panel" id="panel-jobs">
+    <div class="panel-title">🏅 职业 <span class="hint" id="job-current">未选择</span><button class="panel-toggle" data-collapse="jobs">收起</button></div>
+    <div class="hint" style="font-size:12px;color:#8a90a8;margin:4px 0 8px;line-height:1.6;">经验转化：130→131 所需经验的 5%（2000 万）= 1 点职业经验；选中职业并装备对应类型武器时，获得的经验优先转为职业经验（人物等级暂停）；升到 Lv.N 需要 N 点职业经验。</div>
+    <div class="job-grid" id="jobs"></div>
   </div>
 
   <div class="modal" id="stats-modal">
     <div class="modal-box">
       <div class="modal-head"><span>📊 属性统计</span><button id="btn-stats-close" class="modal-close">关闭</button></div>
       <div id="stats"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="unlock-modal">
+    <div class="modal-box unlock-box">
+      <div class="modal-head"><span id="unlock-title">🎉 解锁新功能</span></div>
+      <div id="unlock-body"></div>
+      <div style="margin-top:16px;text-align:right;"><button id="unlock-close" class="gold">知道了</button></div>
     </div>
   </div>
 
@@ -147,6 +174,7 @@
         <button class="filter-btn" data-filter="UR">UR</button>
       </div>
       <div class="filter-row" id="weapon-attr-filters"></div>
+      <div class="filter-row" id="weapon-type-filters"></div>
       <div class="grid" id="grid"></div>
     </div>
   </aside>
@@ -155,6 +183,6 @@
 <div id="toasts"></div>
 <div id="area-tip"></div>
 
-<script src="game.js?v=20261108-0410"></script>
+<script src="game.js?v=20261108-1230"></script>
 </body>
 </html>

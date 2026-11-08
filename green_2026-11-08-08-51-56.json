@@ -2,11 +2,11 @@
   "currentIdx": 35,
   "unlockedIdx": 90,
   "progressKills": 0,
-  "kills": 62097,
-  "gold": 108294069,
+  "kills": 62556,
+  "gold": 141052344,
   "level": 130,
-  "exp": 3931696319,
-  "points": 793824,
+  "exp": 4087711728,
+  "points": 961127,
   "fates": {
     "fate_edge": true,
     "fate_staff": true,
@@ -22,35 +22,35 @@
   "dungeonCleared": true,
   "expBuyLevel": 15,
   "dropBuyLevel": 16,
-  "silverGlory": 21020,
-  "bahamutHorn": 9,
+  "silverGlory": 12475,
+  "bahamutHorn": 0,
   "bahamutFirstCleared": true,
   "sealBroken": true,
   "decayedWeapons": {
-    "decayed_staff": 206,
-    "decayed_dagger": 247,
-    "decayed_tachi": 221,
-    "decayed_spear": 236,
-    "decayed_harp": 198,
-    "decayed_fist": 188,
-    "decayed_bow": 227,
-    "decayed_lance": 165,
-    "decayed_sword": 268,
-    "decayed_axe": 269
+    "decayed_staff": 192,
+    "decayed_dagger": 253,
+    "decayed_tachi": 228,
+    "decayed_spear": 242,
+    "decayed_harp": 204,
+    "decayed_fist": 191,
+    "decayed_bow": 229,
+    "decayed_lance": 166,
+    "decayed_sword": 275,
+    "decayed_axe": 261
   },
   "bahaUnlocked": true,
   "tiamatHard": true,
-  "tiamatHardKills": 464,
+  "tiamatHardKills": 474,
   "yggHard": true,
-  "yggHardKills": 364,
+  "yggHardKills": 374,
   "leviHard": true,
-  "leviHardKills": 254,
+  "leviHardKills": 263,
   "coloHard": true,
-  "coloHardKills": 208,
+  "coloHardKills": 217,
   "chivHard": true,
-  "chivHardKills": 37,
+  "chivHardKills": 44,
   "celesteHard": true,
-  "celesteHardKills": 96,
+  "celesteHardKills": 105,
   "tenshiAwakened": {
     "tenshi_raphael": true,
     "tenshi_uriel": true,
@@ -59,28 +59,26 @@
     "tenshi_gemini": true,
     "tenshi_belial": true
   },
-  "fireFeather": 12,
-  "waterFeather": 32,
+  "fireFeather": 13,
+  "waterFeather": 35,
   "earthFeather": 8,
-  "windFeather": 3,
+  "windFeather": 5,
   "lightFeather": 0,
   "darkFeather": 0,
   "medWingAwakened": true,
-  "medWingAwakened2": false,
+  "medWingAwakened2": true,
   "vhCleared": true,
-  "verdantCrystal": 8,
+  "verdantCrystal": 0,
   "hardZoeKills": 1401,
   "bossCooldowns": {
-    "michael": 1794122131185,
-    "tiamat": 1794122131972,
-    "celeste": 1794122132936,
-    "yggdrasil": 1794122133056,
-    "uriel": 1794122134186,
-    "leviathan": 1794122134962,
-    "raphael": 1794122136086,
-    "colossus": 1794122136963,
-    "bahamut": 1794122138142,
-    "gabriel": 1794122138994
+    "celeste": 1794127917155,
+    "colossus": 1794127919163,
+    "bahamut": 1794127923153,
+    "gabriel": 1794127927156,
+    "zoe": 1794127936260,
+    "tiamat": 1794127940161,
+    "yggdrasil": 1794127941161,
+    "chivalier": 1794127946260
   },
   "rank": 3,
   "goldBoostLevel": 7,
@@ -94,11 +92,11 @@
     "colossus": 795,
     "chivalier": 1003,
     "celeste": 968,
-    "bahamut": 959,
-    "raphael": 23,
-    "michael": 67,
-    "gabriel": 102,
-    "uriel": 24
+    "bahamut": 968,
+    "raphael": 31,
+    "michael": 75,
+    "gabriel": 111,
+    "uriel": 32
   },
   "achievements": {
     "first_kill": true,
@@ -179,7 +177,7 @@
   },
   "equipped": "chiv_magna_axe",
   "weaponFilter": "ALL",
-  "weaponAttrFilter": "光",
+  "weaponAttrFilter": "无",
   "notifyUpgrade": false,
   "hidePointLog": true,
   "autoAdvance": false,
@@ -194,12 +192,12 @@
     "chivalier": false,
     "celeste": false,
     "bahamut": true,
-    "zoe_vh": false,
+    "zoe_vh": true,
     "yggdrasil_hard": true,
     "tiamat_hard": true,
     "leviathan_hard": true,
     "colossus_hard": true,
-    "chivalier_hard": false,
+    "chivalier_hard": true,
     "celeste_hard": true,
     "gabriel": true,
     "michael": true,
@@ -222,7 +220,7 @@
     "colossus_hard": true,
     "tiamat_hard": true,
     "chivalier_hard": false,
-    "celeste_hard": false,
+    "celeste_hard": true,
     "gabriel": true
   },
   "hiddenBosses": {
@@ -238,14 +236,15 @@
     "yggdrasil_hard": true,
     "leviathan_hard": true,
     "colossus_hard": true,
-    "gabriel": true
+    "gabriel": true,
+    "celeste_hard": true
   },
   "hideBossReward": false,
   "hiddenBossMsgs": {
     "bahamut": true,
     "zoe": true,
     "chivalier": false,
-    "celeste": false,
+    "celeste": true,
     "tiamat": true,
     "yggdrasil": true,
     "leviathan": true,
@@ -257,7 +256,7 @@
   },
   "zoeHard": false,
   "zoeVH": true,
-  "vhZoeKills": 15,
+  "vhZoeKills": 22,
   "collapsed": {
     "armory": false,
     "material": false,
@@ -268,7 +267,7 @@
     "stats": false
   },
   "islandIdx": 5,
-  "islandId": "wind",
+  "islandId": "sea",
   "hiddenChapters": {
     "1": true,
     "2": true,
@@ -280,7 +279,7 @@
     "8": true,
     "9": true
   },
-  "amberEyes": 18526,
+  "amberEyes": 18466,
   "islandProgress": {
     "1": 10,
     "2": 10,
@@ -323,21 +322,47 @@
     "4": 10,
     "5": 10
   },
-  "earthBud": 2436,
-  "seaFan": 2158,
-  "sunCore": 3438,
-  "starPlankton": 16691,
-  "darkShard": 1781,
-  "windCrystal": 19451,
-  "earthCrystal": 15350,
-  "waterCrystal": 10858,
-  "fireCrystal": 8937,
-  "lightCrystal": 1513,
-  "darkCrystal": 4415,
+  "earthBud": 2376,
+  "seaFan": 6120,
+  "sunCore": 3884,
+  "starPlankton": 16571,
+  "darkShard": 1709,
+  "windCrystal": 19970,
+  "earthCrystal": 15870,
+  "waterCrystal": 11326,
+  "fireCrystal": 9405,
+  "lightCrystal": 1877,
+  "darkCrystal": 4883,
   "tiamatCleared": true,
   "yggCleared": true,
   "leviCleared": true,
   "coloCleared": true,
+  "expertProgress": {},
+  "jobs": {},
+  "currentJob": null,
+  "mapView": "island",
+  "inMap": true,
+  "rankFight": null,
+  "elemSword": 0,
+  "certSword": 0,
+  "elemAxe": 0,
+  "certAxe": 0,
+  "elemDagger": 0,
+  "certDagger": 0,
+  "elemBow": 0,
+  "certBow": 0,
+  "elemSpear": 0,
+  "certSpear": 0,
+  "elemKnife": 0,
+  "certKnife": 0,
+  "elemStaff": 0,
+  "certStaff": 0,
+  "elemGun": 0,
+  "certGun": 0,
+  "elemLute": 0,
+  "certLute": 0,
+  "elemFist": 0,
+  "certFist": 0,
   "weapons": {
     "wood_sword": {
       "level": 100
@@ -736,10 +761,10 @@
       "level": 40
     },
     "baha_staff": {
-      "level": 31
+      "level": 40
     },
     "baha_axe": {
-      "level": 1
+      "level": 7
     },
     "baha_dagger": {
       "level": 1
@@ -748,7 +773,7 @@
       "level": 27
     },
     "levi_magna_bow": {
-      "level": 14
+      "level": 15
     },
     "magna_fist": {
       "level": 24
@@ -757,7 +782,7 @@
       "level": 21
     },
     "ygg_magna_bow": {
-      "level": 19
+      "level": 21
     },
     "levi_magna_dagger": {
       "level": 14
@@ -766,7 +791,7 @@
       "level": 12
     },
     "colo_magna_gun": {
-      "level": 8
+      "level": 10
     },
     "magna_axe": {
       "level": 16
@@ -775,7 +800,7 @@
       "level": 7
     },
     "ygg_magna_sword": {
-      "level": 6
+      "level": 8
     },
     "ygg_magna_dagger": {
       "level": 7
@@ -796,7 +821,7 @@
       "level": 6
     },
     "chiv_magna_axe": {
-      "level": 1
+      "level": 2
     }
   }
 }
