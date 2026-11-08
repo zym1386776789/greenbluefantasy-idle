@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>挂机武器传说</title>
+<link rel="stylesheet" href="style.css?v=20261108-0400">
+<style>
+/* 强制覆盖：防止旧缓存样式里的 content-visibility 导致面板内容不渲染 */
+.panel { content-visibility: visible !important; contain-intrinsic-size: auto !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>⚔️ 挂机武器传说<span class="sub">自动战斗 · 地图闯关 · 收集武器</span></h1>
+    <div class="top-actions">
+      <button id="btn-pause" class="primary">⏸ 暂停</button>
+      <button id="btn-speed" class="active">1x</button>
+      <button id="btn-export">📤 导出存档</button>
+      <button id="btn-stats">📊 统计</button>
+      <button id="btn-import">📥 导入存档</button>
+      <input type="file" id="import-file" accept=".json,.txt,application/json,text/plain" style="display:none">
+      <button id="btn-reset">🗑 重置存档</button>
+    </div>
+  </header>
+
+  <aside class="app-side-left">
+    <div class="panel" id="panel-bag">
+      <div class="panel-title">🎒 背包 <span class="hint">所有材料一览</span><button class="panel-toggle" data-collapse="bag">收起</button></div>
+      <div id="bag" class="bag-grid"></div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+  <div class="panel">
+    <div class="statusbar">
+      <div class="stat"><div class="label">区域</div><div class="value wave" id="st-area">1-1</div></div>
+      <div class="stat"><div class="label">金币</div><div class="value gold" id="st-gold">0</div></div>
+      <div class="stat"><div class="label">收藏点</div><div class="value points" id="st-points">0</div></div>
+      <div class="stat"><div class="label">等级</div><div class="value lv" id="st-level">Lv.1</div><div class="expbar"><div class="expfill" id="exp-fill" style="transform:scaleX(0)"></div></div></div>
+      <div class="stat"><div class="label">攻击</div><div class="value atk" id="st-atk">0</div></div>
+      <div class="stat"><div class="label">生命</div><div class="value hp" id="st-hp">0</div></div>
+      <div class="stat"><div class="label">装备武器</div><div class="value" id="st-equip" style="font-size:15px;">—</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">⚔️ 战斗</div>
+    <div class="battle">
+      <div class="fighter player">
+        <div class="role">冒险者</div>
+        <div class="name">你 <span class="attr-tag" id="player-attr">属性：无</span></div>
+        <div class="bar"><div class="fill" id="bar-player" style="transform:scaleX(1)"></div></div>
+        <div class="bar atb"><div class="fill" id="atb-player" style="transform:scaleX(0)"></div></div>
+        <div class="nums" id="nums-player"></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="fighter monster">
+        <div class="role">怪物</div>
+        <div class="name" id="monster-name">史莱姆</div>
+        <div class="attr-tag" id="monster-attr">属性：无</div>
+        <div class="bar"><div class="fill" id="bar-monster" style="transform:scaleX(1)"></div></div>
+        <div class="bar atb"><div class="fill" id="atb-monster" style="transform:scaleX(0)"></div></div>
+        <div class="nums" id="nums-monster"></div>
+      </div>
+    </div>
+    <div class="round" id="battle-round">第 1 回合</div>
+
+    <div class="controls">
+      <div class="switch-row">
+        <input type="checkbox" id="ck-advance">
+        <label for="ck-advance">自动推进</label>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="ck-upgrade-notify" checked>
+        <label for="ck-upgrade-notify">武器升级通知</label>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="ck-hide-boss">
+        <label for="ck-hide-boss">关闭副本通关通知</label>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="ck-hide-point-log">
+        <label for="ck-hide-point-log">隐藏收藏点日志</label>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:16px;">📜 战斗日志</div>
+    <ul class="logbox" id="logbox"></ul>
+  </div>
+
+  <div class="panel" id="panel-map">
+    <div class="panel-title">🗺️ 地图 <span class="hint">自由选择已解锁区域挂机 · 悬停查看掉落</span><button class="panel-toggle" data-collapse="map">收起</button></div>
+    <div class="map-hint" id="map-hint"></div>
+    <div id="map"></div>
+  </div>
+
+  <div class="panel" id="panel-dungeon">
+    <div class="panel-title">🏰 副本 <span class="hint">挑战强大 Boss 获取永久加成</span></div>
+    <div id="dungeon-list"></div>
+    <div id="rank-section"></div>
+  </div>
+
+  <div class="panel" id="panel-coin">
+    <div class="panel-title">💰 金币商店 <span class="hint">用金币购买永久倍率（每级 +5%，与成就/副本加成为乘算）</span><button class="panel-toggle" data-collapse="coin">收起</button></div>
+    <div id="coin-shop"></div>
+  </div>
+
+  <div class="panel" id="panel-material">
+    <div class="panel-title">🧪 材料商店 <span class="hint">兑换宇宙长剑</span><button class="panel-toggle" data-collapse="material">收起</button></div>
+    <div id="material-shop"></div>
+  </div>
+
+  <div class="panel" id="panel-fateshop">
+    <div class="panel-title">🏪 收藏点商店 <span class="hint" id="shop-hint">满级武器重复获得会转化为收藏点</span><button class="panel-toggle" data-collapse="fateshop">收起</button></div>
+    <div class="shop" id="shop-list"></div>
+  </div>
+
+  <div class="panel" id="panel-ach">
+    <div class="panel-title">🏆 成就 <span class="hint" id="ach-points">成就点 0 · 掉率 +0%</span> <label class="ach-hide-toggle"><input type="checkbox" id="ck-hide-ach"> 隐藏已完成</label><button class="panel-toggle" data-collapse="ach">收起</button></div>
+    <div class="ach-grid" id="ach-grid"></div>
+  </div>
+
+  <div class="modal" id="stats-modal">
+    <div class="modal-box">
+      <div class="modal-head"><span>📊 属性统计</span><button id="btn-stats-close" class="modal-close">关闭</button></div>
+      <div id="stats"></div>
+    </div>
+  </div>
+
+  <footer>人物属性 = (已装备武器 ×100% + 未装备武器 ×10%) × 命运武器加成 · 每章掉率 25% → 100%（成就点提供 +1%/点）· 武器每级 +1%（100 级 = 200%）· 进度自动保存到本地</footer>
+  </div>
+
+  <aside class="app-side">
+    <div class="panel" id="panel-armory">
+      <div class="armory-head">
+        <div class="panel-title" style="margin-bottom:0;">🗡️ 武器库 <span class="hint">点击武器装备 / 卸下 · 已装备 100% 属性，未装备 10% 属性</span></div>
+        <button id="btn-best" class="gold">装备最强武器</button>
+        <button class="panel-toggle" data-collapse="armory">收起</button>
+      </div>
+      <div class="filter-row" id="weapon-filters">
+        <button class="filter-btn active" data-filter="ALL">全部</button>
+        <button class="filter-btn" data-filter="R">R</button>
+        <button class="filter-btn" data-filter="SR">SR</button>
+        <button class="filter-btn" data-filter="SSR">SSR</button>
+        <button class="filter-btn" data-filter="UR">UR</button>
+      </div>
+      <div class="filter-row" id="weapon-attr-filters"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </aside>
+</div>
+
+<div id="toasts"></div>
+<div id="area-tip"></div>
+
+<script src="game.js?v=20261108-0400"></script>
+</body>
+</html>

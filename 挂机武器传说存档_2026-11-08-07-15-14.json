@@ -1,0 +1,802 @@
+{
+  "currentIdx": 35,
+  "unlockedIdx": 90,
+  "progressKills": 0,
+  "kills": 62097,
+  "gold": 108294069,
+  "level": 130,
+  "exp": 3931696319,
+  "points": 793824,
+  "fates": {
+    "fate_edge": true,
+    "fate_staff": true,
+    "fate_dagger": true,
+    "fate_axe": true,
+    "fate_spear": true,
+    "fate_lute": true,
+    "fate_bow": true,
+    "fate_fist": true,
+    "fate_blade": true,
+    "fate_gun": true
+  },
+  "dungeonCleared": true,
+  "expBuyLevel": 15,
+  "dropBuyLevel": 16,
+  "silverGlory": 21020,
+  "bahamutHorn": 9,
+  "bahamutFirstCleared": true,
+  "sealBroken": true,
+  "decayedWeapons": {
+    "decayed_staff": 206,
+    "decayed_dagger": 247,
+    "decayed_tachi": 221,
+    "decayed_spear": 236,
+    "decayed_harp": 198,
+    "decayed_fist": 188,
+    "decayed_bow": 227,
+    "decayed_lance": 165,
+    "decayed_sword": 268,
+    "decayed_axe": 269
+  },
+  "bahaUnlocked": true,
+  "tiamatHard": true,
+  "tiamatHardKills": 464,
+  "yggHard": true,
+  "yggHardKills": 364,
+  "leviHard": true,
+  "leviHardKills": 254,
+  "coloHard": true,
+  "coloHardKills": 208,
+  "chivHard": true,
+  "chivHardKills": 37,
+  "celesteHard": true,
+  "celesteHardKills": 96,
+  "tenshiAwakened": {
+    "tenshi_raphael": true,
+    "tenshi_uriel": true,
+    "tenshi_gabriel": true,
+    "tenshi_michael": true,
+    "tenshi_gemini": true,
+    "tenshi_belial": true
+  },
+  "fireFeather": 12,
+  "waterFeather": 32,
+  "earthFeather": 8,
+  "windFeather": 3,
+  "lightFeather": 0,
+  "darkFeather": 0,
+  "medWingAwakened": true,
+  "medWingAwakened2": false,
+  "vhCleared": true,
+  "verdantCrystal": 8,
+  "hardZoeKills": 1401,
+  "bossCooldowns": {
+    "michael": 1794122131185,
+    "tiamat": 1794122131972,
+    "celeste": 1794122132936,
+    "yggdrasil": 1794122133056,
+    "uriel": 1794122134186,
+    "leviathan": 1794122134962,
+    "raphael": 1794122136086,
+    "colossus": 1794122136963,
+    "bahamut": 1794122138142,
+    "gabriel": 1794122138994
+  },
+  "rank": 3,
+  "goldBoostLevel": 7,
+  "pointDropLevel": 8,
+  "everHadPoints": true,
+  "bossKills": {
+    "zoe": 14,
+    "tiamat": 799,
+    "yggdrasil": 801,
+    "leviathan": 804,
+    "colossus": 795,
+    "chivalier": 1003,
+    "celeste": 968,
+    "bahamut": 959,
+    "raphael": 23,
+    "michael": 67,
+    "gabriel": 102,
+    "uriel": 24
+  },
+  "achievements": {
+    "first_kill": true,
+    "first_weapon": true,
+    "first_max": true,
+    "clear_1_10": true,
+    "clear_2_10": true,
+    "max_ch1": true,
+    "max_ch2": true,
+    "first_r_weapon": true,
+    "first_r_max": true,
+    "max_ch3": true,
+    "clear_3_10": true,
+    "clear_4_10": true,
+    "first_sr_weapon": true,
+    "max_ch4": true,
+    "clear_5_10": true,
+    "fateown_fate_edge": true,
+    "clear_6_10": true,
+    "clear_7_10": true,
+    "clear_8_10": true,
+    "first_ssr_weapon": true,
+    "first_sr_max": true,
+    "max_ch5": true,
+    "first_ssr_max": true,
+    "all_r_max": true,
+    "all_ssr_max": true,
+    "max_ch6": true,
+    "fateown_fate_staff": true,
+    "max_ch8": true,
+    "all_sr_max": true,
+    "all_master": true,
+    "max_ch7": true,
+    "zoe_first": true,
+    "fateown_fate_dagger": true,
+    "clear_9_10": true,
+    "fateown_fate_axe": true,
+    "rank_1": true,
+    "fateown_fate_spear": true,
+    "fateown_fate_lute": true,
+    "fateown_fate_bow": true,
+    "fateown_fate_fist": true,
+    "fateown_fate_blade": true,
+    "fateown_fate_gun": true,
+    "zoe_hard_first": true,
+    "rank_2": true,
+    "wind_island_clear": true,
+    "tiamat_first": true,
+    "med_wing_max": true,
+    "ygg_first": true,
+    "earth_island_clear": true,
+    "sea_island_clear": true,
+    "levi_first": true,
+    "sun_island_clear": true,
+    "colo_first": true,
+    "light_island_clear": true,
+    "chiv_first": true,
+    "dark_island_clear": true,
+    "celeste_first": true,
+    "bahamut_first": true,
+    "med_wing_80": true,
+    "rank_3": true,
+    "tenshi_first": true,
+    "tenshi_all": true,
+    "baha_first": true,
+    "tenshi_boss_michael": true,
+    "tenshi_boss_gabriel": true,
+    "tenshi_boss_uriel": true,
+    "tenshi_boss_raphael": true,
+    "baha_all": true,
+    "tiamat_hard_first": true,
+    "ygg_hard_first": true,
+    "levi_hard_first": true,
+    "colo_hard_first": true,
+    "chiv_hard_first": true,
+    "celeste_hard_first": true,
+    "zoe_vh_first": true
+  },
+  "equipped": "chiv_magna_axe",
+  "weaponFilter": "ALL",
+  "weaponAttrFilter": "光",
+  "notifyUpgrade": false,
+  "hidePointLog": true,
+  "autoAdvance": false,
+  "hideAchievements": true,
+  "autoBoss": {
+    "zoe": false,
+    "zoe_hard": false,
+    "tiamat": true,
+    "yggdrasil": false,
+    "leviathan": false,
+    "colossus": false,
+    "chivalier": false,
+    "celeste": false,
+    "bahamut": true,
+    "zoe_vh": false,
+    "yggdrasil_hard": true,
+    "tiamat_hard": true,
+    "leviathan_hard": true,
+    "colossus_hard": true,
+    "chivalier_hard": false,
+    "celeste_hard": true,
+    "gabriel": true,
+    "michael": true,
+    "uriel": true,
+    "raphael": true
+  },
+  "autoSweep": {
+    "zoe_hard": false,
+    "tiamat": true,
+    "yggdrasil": false,
+    "leviathan": false,
+    "colossus": false,
+    "chivalier": false,
+    "celeste": false,
+    "zoe": false,
+    "zoe_vh": false,
+    "bahamut": true,
+    "yggdrasil_hard": true,
+    "leviathan_hard": true,
+    "colossus_hard": true,
+    "tiamat_hard": true,
+    "chivalier_hard": false,
+    "celeste_hard": false,
+    "gabriel": true
+  },
+  "hiddenBosses": {
+    "zoe_hard": false,
+    "tiamat": false,
+    "yggdrasil": false,
+    "leviathan": false,
+    "colossus": false,
+    "chivalier": false,
+    "celeste": false,
+    "bahamut": true,
+    "tiamat_hard": true,
+    "yggdrasil_hard": true,
+    "leviathan_hard": true,
+    "colossus_hard": true,
+    "gabriel": true
+  },
+  "hideBossReward": false,
+  "hiddenBossMsgs": {
+    "bahamut": true,
+    "zoe": true,
+    "chivalier": false,
+    "celeste": false,
+    "tiamat": true,
+    "yggdrasil": true,
+    "leviathan": true,
+    "colossus": true,
+    "raphael": true,
+    "uriel": true,
+    "gabriel": true,
+    "michael": true
+  },
+  "zoeHard": false,
+  "zoeVH": true,
+  "vhZoeKills": 15,
+  "collapsed": {
+    "armory": false,
+    "material": false,
+    "fateshop": false,
+    "ach": false,
+    "map": false,
+    "bag": false,
+    "stats": false
+  },
+  "islandIdx": 5,
+  "islandId": "wind",
+  "hiddenChapters": {
+    "1": true,
+    "2": true,
+    "3": true,
+    "4": true,
+    "5": true,
+    "6": true,
+    "7": true,
+    "8": true,
+    "9": true
+  },
+  "amberEyes": 18526,
+  "islandProgress": {
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10
+  },
+  "earthProgress": {
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10
+  },
+  "seaProgress": {
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10
+  },
+  "sunProgress": {
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10
+  },
+  "lightProgress": {
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10
+  },
+  "darkProgress": {
+    "1": 10,
+    "2": 10,
+    "3": 10,
+    "4": 10,
+    "5": 10
+  },
+  "earthBud": 2436,
+  "seaFan": 2158,
+  "sunCore": 3438,
+  "starPlankton": 16691,
+  "darkShard": 1781,
+  "windCrystal": 19451,
+  "earthCrystal": 15350,
+  "waterCrystal": 10858,
+  "fireCrystal": 8937,
+  "lightCrystal": 1513,
+  "darkCrystal": 4415,
+  "tiamatCleared": true,
+  "yggCleared": true,
+  "leviCleared": true,
+  "coloCleared": true,
+  "weapons": {
+    "wood_sword": {
+      "level": 100
+    },
+    "copper_knife": {
+      "level": 100
+    },
+    "copper_staff": {
+      "level": 100
+    },
+    "iron_knife": {
+      "level": 100
+    },
+    "wood_staff": {
+      "level": 100
+    },
+    "copper_sword": {
+      "level": 100
+    },
+    "wood_knife": {
+      "level": 100
+    },
+    "iron_staff": {
+      "level": 100
+    },
+    "iron_sword": {
+      "level": 100
+    },
+    "wood_axe": {
+      "level": 100
+    },
+    "wood_bow": {
+      "level": 100
+    },
+    "stone_axe": {
+      "level": 100
+    },
+    "iron_bow": {
+      "level": 100
+    },
+    "iron_axe": {
+      "level": 100
+    },
+    "hunt_bow": {
+      "level": 100
+    },
+    "iron_spear": {
+      "level": 100
+    },
+    "copper_bell": {
+      "level": 100
+    },
+    "wood_flute": {
+      "level": 100
+    },
+    "copper_spear": {
+      "level": 100
+    },
+    "iron_harp": {
+      "level": 100
+    },
+    "wood_spear": {
+      "level": 100
+    },
+    "copper_dagger": {
+      "level": 100
+    },
+    "wood_dagger": {
+      "level": 100
+    },
+    "leather_glove": {
+      "level": 100
+    },
+    "cloth_glove": {
+      "level": 100
+    },
+    "iron_dagger": {
+      "level": 100
+    },
+    "iron_glove": {
+      "level": 100
+    },
+    "silver_knife": {
+      "level": 100
+    },
+    "steel_staff": {
+      "level": 100
+    },
+    "silver_sword": {
+      "level": 100
+    },
+    "gold_sword": {
+      "level": 100
+    },
+    "mithril_sword": {
+      "level": 100
+    },
+    "meteor_staff": {
+      "level": 100
+    },
+    "gold_staff": {
+      "level": 100
+    },
+    "silver_staff": {
+      "level": 100
+    },
+    "meteor_sword": {
+      "level": 100
+    },
+    "ori_knife": {
+      "level": 100
+    },
+    "gold_knife": {
+      "level": 100
+    },
+    "mithril_knife": {
+      "level": 100
+    },
+    "ori_staff": {
+      "level": 100
+    },
+    "ori_sword": {
+      "level": 100
+    },
+    "mithril_staff": {
+      "level": 100
+    },
+    "steel_sword": {
+      "level": 100
+    },
+    "steel_knife": {
+      "level": 100
+    },
+    "meteor_knife": {
+      "level": 100
+    },
+    "steel_bow": {
+      "level": 100
+    },
+    "ori_axe": {
+      "level": 100
+    },
+    "gold_bow": {
+      "level": 100
+    },
+    "mithril_axe": {
+      "level": 100
+    },
+    "silver_bow": {
+      "level": 100
+    },
+    "silver_axe": {
+      "level": 100
+    },
+    "steel_axe": {
+      "level": 100
+    },
+    "gold_axe": {
+      "level": 100
+    },
+    "meteor_bow": {
+      "level": 100
+    },
+    "mithril_bow": {
+      "level": 100
+    },
+    "meteor_axe": {
+      "level": 100
+    },
+    "ori_bow": {
+      "level": 100
+    },
+    "silver_bell": {
+      "level": 100
+    },
+    "silver_spear": {
+      "level": 100
+    },
+    "steel_flute": {
+      "level": 100
+    },
+    "ori_spear": {
+      "level": 100
+    },
+    "gold_harp": {
+      "level": 100
+    },
+    "gold_spear": {
+      "level": 100
+    },
+    "ori_flute": {
+      "level": 100
+    },
+    "mithril_bell": {
+      "level": 100
+    },
+    "meteor_spear": {
+      "level": 100
+    },
+    "steel_spear": {
+      "level": 100
+    },
+    "meteor_harp": {
+      "level": 100
+    },
+    "steel_dagger": {
+      "level": 100
+    },
+    "gold_dagger": {
+      "level": 100
+    },
+    "silver_dagger": {
+      "level": 100
+    },
+    "silver_glove": {
+      "level": 100
+    },
+    "ori_glove": {
+      "level": 100
+    },
+    "meteor_dagger": {
+      "level": 100
+    },
+    "steel_glove": {
+      "level": 100
+    },
+    "mithril_glove": {
+      "level": 100
+    },
+    "gold_glove": {
+      "level": 100
+    },
+    "meteor_glove": {
+      "level": 100
+    },
+    "ori_dagger": {
+      "level": 100
+    },
+    "mithril_dagger": {
+      "level": 100
+    },
+    "mithril_spear": {
+      "level": 100
+    },
+    "king_bow": {
+      "level": 100
+    },
+    "king_fist": {
+      "level": 100
+    },
+    "king_axe": {
+      "level": 100
+    },
+    "king_staff": {
+      "level": 100
+    },
+    "king_dagger": {
+      "level": 100
+    },
+    "king_knife": {
+      "level": 100
+    },
+    "king_sword": {
+      "level": 100
+    },
+    "king_spear": {
+      "level": 100
+    },
+    "king_lute": {
+      "level": 100
+    },
+    "med_wing_blade": {
+      "level": 80
+    },
+    "wood_gun": {
+      "level": 100
+    },
+    "iron_gun": {
+      "level": 100
+    },
+    "steel_gun": {
+      "level": 100
+    },
+    "gold_gun": {
+      "level": 100
+    },
+    "silver_gun": {
+      "level": 100
+    },
+    "king_gun": {
+      "level": 100
+    },
+    "mithril_gun": {
+      "level": 100
+    },
+    "copper_gun": {
+      "level": 100
+    },
+    "meteor_gun": {
+      "level": 100
+    },
+    "ori_gun": {
+      "level": 100
+    },
+    "tiamat_gun": {
+      "level": 100
+    },
+    "tiamat_axe": {
+      "level": 100
+    },
+    "tiamat_sword": {
+      "level": 100
+    },
+    "ygg_fist": {
+      "level": 100
+    },
+    "ygg_staff": {
+      "level": 100
+    },
+    "ygg_sword": {
+      "level": 100
+    },
+    "levi_dagger": {
+      "level": 100
+    },
+    "levi_gun": {
+      "level": 100
+    },
+    "levi_spear": {
+      "level": 100
+    },
+    "colo_dagger": {
+      "level": 100
+    },
+    "colo_axe": {
+      "level": 100
+    },
+    "colo_fist": {
+      "level": 100
+    },
+    "chiv_spear": {
+      "level": 100
+    },
+    "celeste_gun": {
+      "level": 100
+    },
+    "celeste_axe": {
+      "level": 100
+    },
+    "chiv_sword": {
+      "level": 100
+    },
+    "chiv_axe": {
+      "level": 100
+    },
+    "celeste_staff": {
+      "level": 100
+    },
+    "tenshi_uriel": {
+      "level": 80
+    },
+    "tenshi_raphael": {
+      "level": 80
+    },
+    "tenshi_gabriel": {
+      "level": 80
+    },
+    "tenshi_gemini": {
+      "level": 80
+    },
+    "tenshi_michael": {
+      "level": 80
+    },
+    "tenshi_belial": {
+      "level": 80
+    },
+    "baha_knife": {
+      "level": 40
+    },
+    "baha_bow": {
+      "level": 40
+    },
+    "baha_sword": {
+      "level": 1
+    },
+    "baha_spear": {
+      "level": 1
+    },
+    "baha_lute": {
+      "level": 40
+    },
+    "baha_fist": {
+      "level": 40
+    },
+    "baha_gun": {
+      "level": 40
+    },
+    "baha_staff": {
+      "level": 31
+    },
+    "baha_axe": {
+      "level": 1
+    },
+    "baha_dagger": {
+      "level": 1
+    },
+    "magna_spear": {
+      "level": 27
+    },
+    "levi_magna_bow": {
+      "level": 14
+    },
+    "magna_fist": {
+      "level": 24
+    },
+    "levi_magna_staff": {
+      "level": 21
+    },
+    "ygg_magna_bow": {
+      "level": 19
+    },
+    "levi_magna_dagger": {
+      "level": 14
+    },
+    "colo_magna_fist": {
+      "level": 12
+    },
+    "colo_magna_gun": {
+      "level": 8
+    },
+    "magna_axe": {
+      "level": 16
+    },
+    "colo_magna_staff": {
+      "level": 7
+    },
+    "ygg_magna_sword": {
+      "level": 6
+    },
+    "ygg_magna_dagger": {
+      "level": 7
+    },
+    "cel_magna_spear": {
+      "level": 4
+    },
+    "cel_magna_harp": {
+      "level": 5
+    },
+    "chiv_magna_gun": {
+      "level": 5
+    },
+    "chiv_magna_harp": {
+      "level": 1
+    },
+    "cel_magna_axe": {
+      "level": 6
+    },
+    "chiv_magna_axe": {
+      "level": 1
+    }
+  }
+}
