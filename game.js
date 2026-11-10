@@ -755,6 +755,8 @@ function skillOwnDesc(s) {
   if (s.kind === 'backwater') return `${s.target}属性武器 生命值越低，攻击提升越多（上限 +30%）`;
   if (s.kind === 'kiri') return `${s.target}属性武器 受击 3% 概率免伤并反击`;
   if (s.kind === 'crit') return `${s.target}属性武器 攻击时 8% 概率触发暴击，暴击额外造成 50% 伤害`;
+  if (s.kind === 'song') return `${s.target}属性武器 攻击 +${(s.value * 100).toFixed(0)}%（前 ${s.turns} 回合）`;
+  if (s.kind === 'tyrant') return `${s.target}属性武器 攻击 +${(s.atk * 100).toFixed(0)}%，生命 -${(s.hpDown * 100).toFixed(0)}%`;
   return `${s.target}属性武器 ${s.stat === 'atk' ? '攻击' : '生命'} +15%`;
 }
 
@@ -764,6 +766,8 @@ function multiSkillDesc(s) {
   }
   if (s.kind === 'kiri') return `${s.target}属性武器 受击 3% 概率免伤并反击`;
   if (s.kind === 'crit') return `${s.target}属性武器 攻击时 8% 概率触发暴击，暴击额外造成 50% 伤害`;
+  if (s.kind === 'song') return `${s.target}属性武器 攻击 +${(s.value * 100).toFixed(0)}%（前 ${s.turns} 回合）`;
+  if (s.kind === 'tyrant') return `${s.target}属性武器 攻击 +${(s.atk * 100).toFixed(0)}%，生命 -${(s.hpDown * 100).toFixed(0)}%`;
   const st = magnaSkillBonusOf(s.target);
   const square = /方阵/.test(s.name);
   const v = (s.stat === 'atk' ? (square ? st.sqAtk : st.nmAtk) : (square ? st.sqHp : st.nmHp)) * 100;
@@ -868,6 +872,8 @@ const ACHIEVEMENTS = [
   { id:'rank_1',       name:'破阶而立', desc:'抵达 RANK 1', points:20, invisible:true },
   { id:'rank_2',       name:'破阶再临', desc:'突破至 RANK 2', points:30 },
   { id:'rank_3',       name:'破阶三重', desc:'突破至 RANK 3', points:50 },
+  { id:'rank_4',       name:'四天司试炼', desc:'突破至 RANK 4', points:150, invisible:true },
+  { id:'nezha_first',  name:'星晶兽 · 哪吒', desc:'击败哪吒（星晶兽）', points:200, invisible:true },
   // 集齐并升满（10 点）
   { id:'all_r_max',    name:'凡兵大成',   desc:'集齐并升满 60 件 R 武器', points:10 },
   { id:'all_sr_max',   name:'银辉集大成', desc:'集齐并升满 30 件 SR 武器', points:10 },
@@ -965,6 +971,8 @@ let state = {
   bahaHardKills: 0,      // 黑银之翼 巴哈姆特（Hard）击败次数（独立计数，用于解锁自动挑战/扫荡）
   owgi: 0,               // 奥义槽（0-100）
   dummyMode: false,      // 训练木桩模式（点击「🎯 木桩」切换）
+  starBeasts: {},        // 星晶兽开放状态 { wind: true, ... }
+  viewIslandId: '',      // 岛屿窗口中「浏览中」的岛（不影响实际挂机目标）
   bowRapid: false,       // 游侠奥义：本场连射改为每 2 次 33.3%
   fistCapUp: false,      // 格斗家奥义：本场斗气上限 45%
   owgiAuto: true,        // 奥义满槽自动释放（默认开启）
@@ -1084,12 +1092,30 @@ function weaponBonus(def) {
   } else if (def.attr === '火') {
     const s = coloSquareBonus(); sqAtk += s.atk; sqHp += s.hp;
   }
+  // 哪吒武器：暴君（攻 ×1.15）与楚歌（攻 ×1.08，前 8 回合），层内独立相乘
+  const hasNezhaN = !!state.weapons['nezha_spear'];
+  const hasNezhaSq = !!state.weapons['nezha_ancient'];
+  const nezhaRound = (state.dungeonFight && state.dungeonFight.round) || (state.monster && state.monster.round) || 0;
   const ms = magnaSkillBonusOf(def.attr);
   sqAtk += ms.sqAtk; sqHp += ms.sqHp; sqBw += ms.sqBw;
   nmAtk += ms.nmAtk; nmHp += ms.nmHp; nmBw += ms.nmBw;
   const bw = backwaterCurve();
-  atk *= (1 + sqAtk) * (1 + bw * sqBw) * (1 + nmAtk) * (1 + bw * nmBw);
+  // 哪吒：暴君 / 楚歌 按「同层同类相加」汇总（支持同层多把叠加）
+  let sqTyrant = 0, nmTyrant = 0, sqSong = 0, nmSong = 0;
+  for (const w of NEZHA_WEAPONS) {
+    if (!state.weapons[w.id]) continue;
+    const isSq = /方阵/.test(w.skills[0].name);
+    for (const s of w.skills) {
+      if (s.kind === 'tyrant') { if (isSq) sqTyrant += s.atk; else nmTyrant += s.atk; }
+      if (s.kind === 'song' && nezhaRound <= 8) { if (isSq) sqSong += s.value; else nmSong += s.value; }
+    }
+  }
+  atk *= (1 + sqAtk) * (1 + sqTyrant) * (1 + sqSong) * (1 + bw * sqBw)
+       * (1 + nmAtk) * (1 + nmTyrant) * (1 + nmSong) * (1 + bw * nmBw);
   hp *= (1 + sqHp) * (1 + nmHp);
+  // 暴君负面：跨层加算（两把 → ×0.8）
+  const tyrantDown = (hasNezhaN ? 0.10 : 0) + (hasNezhaSq ? 0.10 : 0);
+  if (tyrantDown > 0) hp *= (1 - tyrantDown);
   return { atk, hp };
 }
 function equippedDef() { return state.equipped ? WEAPON_BY_ID[state.equipped] : null; }
@@ -1287,6 +1313,97 @@ const ISLANDS = {
 };
 // ===== 十大专精岛（RANK 4 解锁）=====
 // 每岛对应一种武器：前 9 关掉落该武器的元素，第 10 关 BOSS 掉落该职业之证
+// ===== 星晶兽（元素岛第 6 关 · 首次击败巴哈姆特后解锁开放）=====
+// 开放需要一次性投入材料；开放后暂不可挑战（占位）
+const STAR_BEASTS = [
+  { id: 'wind',  name: '哪吒',            attr: '风', mat: 'amberEyes',   elem: 'windCrystal',  feather: 'windFeather' },
+  { id: 'earth', name: '美杜莎',           attr: '土', mat: 'earthBud',    elem: 'earthCrystal', feather: 'earthFeather' },
+  { id: 'water', name: '玛裘拉·玛利乌斯',  attr: '水', mat: 'seaFan',      elem: 'waterCrystal', feather: 'waterFeather' },
+  { id: 'sun',   name: '烈焰·琉璃',        attr: '火', mat: 'sunCore',     elem: 'fireCrystal',  feather: 'fireFeather' },
+  { id: 'light', name: '阿波罗',           attr: '光', mat: 'starPlankton',elem: 'lightCrystal', feather: null, extraFeathers: { fireFeather: 25, waterFeather: 25 } },
+  { id: 'dark',  name: 'D天使·奥莉薇尔',   attr: '暗', mat: 'darkShard',   elem: 'darkCrystal',  feather: null, extraFeathers: { earthFeather: 25, windFeather: 25 } },
+];
+const STAR_MAT_NAMES = {
+  amberEyes: '岚龙的琥珀眼', earthBud: '创树的花蕾', seaFan: '海神的扇尾', sunCore: '日珥反应炉',
+  starPlankton: '星星浮游体', darkShard: '黑雾的结晶',
+  windCrystal: '风晶之元素', earthCrystal: '土晶之元素', waterCrystal: '水晶之元素',
+  fireCrystal: '火晶之元素', lightCrystal: '光晶之元素', darkCrystal: '暗晶之元素',
+  silverGlory: '银天之辉', verdantCrystal: '苍翠的结晶',
+  fireFeather: '火之羽毛', waterFeather: '水之羽毛', earthFeather: '土之羽毛', windFeather: '风之羽毛',
+};
+// ===== 星晶兽 · 哪吒（风之岛第 6 关）=====
+const NEZHA_BOSS = {
+  name: '哪吒', attr: '风', hp: 4000000, atk: 15000,
+  phase2Hp: 0.5, phase3Hp: 0.1,
+  fireLanceBase: 0.20, fireLanceEnraged: 0.25,
+};
+// 哪吒掉落武器（保留定义；调试时可通过控制台清空拥有状态）
+const NEZHA_WEAPONS = [
+  { id: 'nezha_spear', type: '枪', name: '那罗鸠婆', rarity: 'SSR', atk: 270, hp: 330, attr: '风', maxLevel: 100, skills: [
+      { name: '龙卷的楚歌-1', kind: 'song', target: '风', value: 0.08, turns: 8 },
+      { name: '乱气的暴君-1', kind: 'tyrant', target: '风', atk: 0.15, hpDown: 0.10 },
+    ] },
+  { id: 'nezha_ancient', type: '枪', name: '远古那罗鸠婆', rarity: 'SSR', atk: 270, hp: 330, attr: '风', maxLevel: 100, skills: [
+      { name: '岚龙方阵·楚歌-1', kind: 'song', target: '风', value: 0.08, turns: 8 },
+      { name: '岚龙方阵·暴君-1', kind: 'tyrant', target: '风', atk: 0.15, hpDown: 0.10 },
+    ] },
+];
+NEZHA_WEAPONS.forEach(w => { WEAPON_BY_ID[w.id] = w; });
+
+function starBeastUnlocked() {
+  return !!(state.bahamutFirstCleared || state.bahaHardFirst);
+}
+function starBeastCost(sb) {
+  const list = [[sb.mat, 10000], [sb.elem, 50000], ['silverGlory', 50000], ['verdantCrystal', 50]];
+  if (sb.feather) list.push([sb.feather, 50]);
+  if (sb.extraFeathers) Object.keys(sb.extraFeathers).forEach(k => list.push([k, sb.extraFeathers[k]]));
+  return list;
+}
+function handleStarBeast(id) {
+  const sb = STAR_BEASTS.find(x => x.id === id);
+  if (!sb) return;
+  if (!starBeastUnlocked()) { toast('需首次击败巴哈姆特后解锁'); return; }
+  state.starBeasts = state.starBeasts || {};
+  if (state.starBeasts[id]) {
+    if (id === 'wind') { startNezhaFight(); return; }
+    toast(`⚡ ${sb.name} 已开放（暂不可挑战）`);
+    return;
+  }
+  const need = starBeastCost(sb);
+  const lack = need.filter(([k, n]) => (state[k] || 0) < n);
+  if (lack.length) {
+    toast('材料不足：' + lack.map(([k, n]) => `${STAR_MAT_NAMES[k] || k} ${fmt(state[k] || 0)}/${fmt(n)}`).join('、'));
+    return;
+  }
+  need.forEach(([k, n]) => { state[k] -= n; });
+  state.starBeasts[id] = true;
+  log(`⚡ 开放星晶兽挑战：<b>${sb.name}</b>（${sb.attr}属性 · 暂不可挑战）`, 'drop');
+  toast(`⚡ ${sb.name} 已开放（暂不可挑战）`);
+  renderMapInner();
+  updateAll();
+  save(true);
+}
+
+// 星晶兽 · 哪吒战
+function startNezhaFight() {
+  const b = NEZHA_BOSS;
+  state.dungeonFight = {
+    id: 'nezha', name: b.name, attr: b.attr, atk: b.atk,
+    bossHp: b.hp, bossMaxHp: b.hp, hard: false, vh: false, diff: 'Normal',
+    round: 0, playerGauge: 0, bossGauge: 0, segments: 0, bowHits: 0,
+    fireLance: 0,
+  };
+  state.playerHp = playerMaxHp();
+  state.owgi = 0;
+  state.bowRapid = false;
+  state.fistCapUp = false;
+  log('⚡ 挑战星晶兽 · <b>哪吒</b>（风属性 · 2,000,000 生命 · 10,000 攻击）', 'area');
+  toast('⚡ 哪吒 登场！');
+  renderDungeon();
+  updateAll();
+  save(true);
+}
+
 const EXPERT_MONSTERS = {
   sword:  ['锋刃小兵', '铁卫兵', '剑翼鹰', '钢甲骑士', '断钢魔像', '刃风精灵', '银锋巨像', '剑冢守卫', '苍锋龙', '剑之试炼者'],
   axe:    ['裂石小兵', '重斧卫', '狂斧狼', '斧翼蝠', '碎岩巨像', '烈焰斧手', '铁颚兽', '战斧卫士', '裂地魔', '斧之试炼者'],
@@ -1472,32 +1589,33 @@ function expertIslandCfg() {
   return cfg && cfg.expert ? cfg : null;
 }
 
-function islandCfg() { return ISLANDS[state.islandId] || ISLANDS.wind; }
-function islandProgMap() {
-  const cfgE = ISLANDS[state.islandId];
+function islandCfg(id) { return ISLANDS[id || state.islandId] || ISLANDS.wind; }
+function islandProgMap(id) {
+  const key = id || state.islandId;
+  const cfgE = ISLANDS[key];
   if (cfgE && cfgE.expert) {
     const k = cfgE.expert.id;
     if (!state.expertProgress) state.expertProgress = {};
     if (!state.expertProgress[k]) state.expertProgress[k] = {};
     return state.expertProgress[k];
   }
-  if (state.islandId === 'earth') {
+  if (key === 'earth') {
     if (!state.earthProgress) state.earthProgress = {};
     return state.earthProgress;
   }
-  if (state.islandId === 'sea') {
+  if (key === 'sea') {
     if (!state.seaProgress) state.seaProgress = {};
     return state.seaProgress;
   }
-  if (state.islandId === 'sun') {
+  if (key === 'sun') {
     if (!state.sunProgress) state.sunProgress = {};
     return state.sunProgress;
   }
-  if (state.islandId === 'light') {
+  if (key === 'light') {
     if (!state.lightProgress) state.lightProgress = {};
     return state.lightProgress;
   }
-  if (state.islandId === 'dark') {
+  if (key === 'dark') {
     if (!state.darkProgress) state.darkProgress = {};
     return state.darkProgress;
   }
@@ -1707,6 +1825,8 @@ function playerAttackOnce() {
     sameAttr: playerAttr() === (state.monster.attr || '无'),
     firstHit: state.monster.round === 1,
     hitIdx: state.monster.round,
+    // Boss 判定：副本 / 星晶兽 / 专精岛第 10 关试炼者
+    isBoss: !!(state.dungeonFight || (state.islandIdx === 10 && islandCfg().expert)),
   });
   // 游侠·连射：单独机制，追加伤害不参与暴击
   dmg *= expertIslandBonus().atk;
@@ -1970,11 +2090,20 @@ function dungeonTick() {
       updateBattleUI();
       return;
     }
+    // 哪吒阶段机制
+    if (f.id === 'nezha') {
+      const ratio = f.bossHp / f.bossMaxHp;
+      if (ratio <= 0.1 && f.fireLance < 0.25) { f.fireLance = 0.25; log('🔥 哪吒狂暴：火焰长枪提升至 25% 火属性追伤！', 'death'); toast('🔥 哪吒狂暴！'); }
+      else if (ratio <= 0.5 && f.fireLance < 0.2) { f.fireLance = 0.2; log('🔥 哪吒使用「火焰长枪」：后续攻击附带 20% 火属性追伤', 'death'); }
+    }
     const attrMod = attrModifier(playerAttr(), f.attr || '无');
     let mdmgIn = attrMod.in;
     // 枪兵奥义：被克制时受到伤害 ×2/3（四元素 150%→100%，光暗 100%→66.6%）
     if (state.pierceTurns > 0 && isCountered(playerAttr(), f.attr || '无')) mdmgIn *= 2 / 3;
-    const mdmg = f.atk * mdmgIn * rand(0.9, 1.1) * jobDefMul({ firstHit: (f.round || 0) <= 1, weak: isCountered(playerAttr(), f.attr || '无') });
+    let mdmg = f.atk * mdmgIn * rand(0.9, 1.1) * jobDefMul({ firstHit: (f.round || 0) <= 1, weak: isCountered(playerAttr(), f.attr || '无') });
+    if (f.id === 'nezha' && f.fireLance > 0) {
+      mdmg += f.atk * f.fireLance * attrModifier(playerAttr(), '火').in;
+    }
     if (state.pierceTurns > 0) state.pierceTurns--;
     let mdmgFinal = mdmg;
     if (state.owgiShield > 0) {
@@ -2077,6 +2206,21 @@ function onDungeonWin() {
     }
     unlockAchievement('tiamat_first');
     if (boss.hard) unlockAchievement('tiamat_hard_first');
+  }
+  // 星晶兽 · 哪吒：两把武器各 0.04% 基础掉率（享受掉率加成）
+  if (boss.id === 'nezha') {
+    const nBoost = (1 + achievementPoints() * ACH_POINTS_PER) * totalDropMul();
+    NEZHA_WEAPONS.forEach(w => {
+      const cnt = rollDropCount(0.0004 * nBoost);
+      for (let i = 0; i < cnt; i++) {
+        const res = addWeapon(w);
+        const msg = res.type === 'new' ? '获得 Lv.1' : (res.type === 'up' ? '升级至 Lv.' + res.level : '已满级，转化为 ' + res.points + ' 收藏点');
+        log(`⚡ 击败哪吒，掉落 <span class="ssr">[SSR] ${w.name}</span>（${msg}）`, 'up');
+        toast(`⚡ 获得 [SSR] ${w.name}！${msg}`);
+      }
+    });
+    state.starBeasts.nezhaKills = (state.starBeasts.nezhaKills || 0) + 1;
+    unlockAchievement('nezha_first');
   }
   if (boss.id === 'yggdrasil') {
     const yBoost = (1 + achievementPoints() * ACH_POINTS_PER) * totalDropMul();
@@ -3092,9 +3236,29 @@ function renderStats() {
     else if (attr === '火') { const s = coloSquareBonus(); sqAtk += s.atk; sqHp += s.hp; }
     const ms = magnaSkillBonusOf(attr);
     sqAtk += ms.sqAtk; sqHp += ms.sqHp; sqBw += ms.sqBw;
-    const nmAtk = ms.nmAtk, nmHp = ms.nmHp, nmBw = ms.nmBw;
-    const atkMul = (1 + sqAtk) * (1 + bw * sqBw) * (1 + nmAtk) * (1 + bw * nmBw);
-    const hpMul = (1 + sqHp) * (1 + nmHp);
+    let nmAtk = ms.nmAtk, nmHp = ms.nmHp, nmBw = ms.nmBw;
+    // 哪吒武器：楚歌（前 8 回合 +8%）与暴君（+15% 攻 / 生命 -10%，两把跨层加算）
+    const hasNezhaN = attr === '风' && !!state.weapons['nezha_spear'];
+    const hasNezhaSq = attr === '风' && !!state.weapons['nezha_ancient'];
+    const nezhaRoundNow = (state.dungeonFight && state.dungeonFight.round) || (state.monster && state.monster.round) || 0;
+    // 哪吒：攻击走独立乘区（nezhaAtkMul），这里只累计生命负面
+    let nezhaHpDown = 0;
+    if (hasNezhaN) nezhaHpDown += 0.10;
+    if (hasNezhaSq) nezhaHpDown += 0.10;
+    let sqTyrantPct = 0, nmTyrantPct = 0, sqSongPct = 0, nmSongPct = 0;
+    if (attr === '风') {
+      for (const nw of NEZHA_WEAPONS) {
+        if (!state.weapons[nw.id]) continue;
+        const isSq = /方阵/.test(nw.skills[0].name);
+        for (const s of nw.skills) {
+          if (s.kind === 'tyrant') { if (isSq) sqTyrantPct += s.atk * 100; else nmTyrantPct += s.atk * 100; }
+          if (s.kind === 'song' && nezhaRoundNow <= 8) { if (isSq) sqSongPct += s.value * 100; else nmSongPct += s.value * 100; }
+        }
+      }
+    }
+    const atkMul = (1 + sqAtk) * (1 + sqTyrantPct / 100) * (1 + sqSongPct / 100) * (1 + bw * sqBw)
+      * (1 + nmAtk) * (1 + nmTyrantPct / 100) * (1 + nmSongPct / 100) * (1 + bw * nmBw);
+    const hpMul = (1 + sqHp) * (1 + nmHp) * (1 - nezhaHpDown);
     const grp = { atk: [], hp: [], sp: [] };
     const addSrc = (text, g) => grp[g].push(text);
     // 原生方阵武器
@@ -3122,15 +3286,23 @@ function renderStats() {
         else addSrc(`${w.name}：${s.name}（${tier}守护 +15%）`, 'hp');
       }
     }
+    // 哪吒武器技能（风）
+    if (hasNezhaN) {
+      addSrc('那罗鸠婆：龙卷的楚歌-1（普通攻刃 +8%，前 8 回合）', 'sp');
+    }
+    if (hasNezhaSq) {
+      addSrc('远古那罗鸠婆：岚龙方阵·楚歌-1（方阵攻刃 +8%，前 8 回合）', 'sp');
+    }
     const srcHtml = grp.sp.length ? `<div class="stat-grp"><b>特殊效果</b><br>${grp.sp.join('<br>')}</div>` : '';
     html += `<div class="stat-card">
       <div class="stat-name">${icon} ${attr}属性武器</div>
       <div class="stat-sec">攻击 <b>×${atkMul.toFixed(3)}</b>（+${fmtPct(atkMul - 1)}%）</div>
-      <div class="stat-layer">方阵：攻刃 +${(sqAtk * 100).toFixed(0)}%${sqBw ? ` · 背水 ×${sqBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}</div>
-      <div class="stat-layer">普通：攻刃 +${(nmAtk * 100).toFixed(0)}%${nmBw ? ` · 背水 ×${nmBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}</div>
-      <div class="stat-sec">生命 <b>×${hpMul.toFixed(3)}</b>（+${fmtPct(hpMul - 1)}%）</div>
-      <div class="stat-layer">方阵：守护 +${(sqHp * 100).toFixed(0)}%</div>
-      <div class="stat-layer">普通：守护 +${(nmHp * 100).toFixed(0)}%</div>
+      <div class="stat-layer">方阵：攻刃 ×${(1 + sqAtk).toFixed(2)}${hasNezhaSq ? ` · 暴君 ×${(1 + sqTyrantPct / 100).toFixed(2)}` : ''}${sqSongPct > 0 ? ` · 楚歌 ×${(1 + sqSongPct / 100).toFixed(2)}` : ''}${sqBw ? ` · 背水 ×${sqBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}</div>
+      <div class="stat-layer">普通：攻刃 ×${(1 + nmAtk).toFixed(2)}${hasNezhaN ? ` · 暴君 ×${(1 + nmTyrantPct / 100).toFixed(2)}` : ''}${nmSongPct > 0 ? ` · 楚歌 ×${(1 + nmSongPct / 100).toFixed(2)}` : ''}${nmBw ? ` · 背水 ×${nmBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}</div>
+      <div class="stat-sec">生命 <b>×${hpMul.toFixed(3)}</b>（${hpMul >= 1 ? '+' : ''}${fmtPct(hpMul - 1)}%）</div>
+      <div class="stat-layer">方阵：守护 ×${(1 + sqHp).toFixed(2)}</div>
+      <div class="stat-layer">普通：守护 ×${(1 + nmHp).toFixed(2)}</div>
+      ${nezhaHpDown > 0 ? `<div class="stat-layer">暴君：生命 -${(nezhaHpDown * 100).toFixed(0)}%（方阵 -10% + 普通 -10% 跨层加算）</div>` : ''}
       <div class="stat-src stat-list">${srcHtml || '<div class="stat-none">无特殊效果</div>'}</div>
     </div>`;
   }
@@ -3271,6 +3443,8 @@ const UNLOCK_DEFS = [
   { key: 'jobs', name: '职业系统', desc: '用职业之证解锁职业；精通后被动以 5% 效果全局生效。', cond: () => state.rank >= 4 },
   { key: 'autoBoss', name: '自动挑战', desc: '某难度 Boss 累计击败 10 次后开放，冷却结束自动挑战。', cond: () => maxBossKillCount() >= 10 },
   { key: 'autoSweep', name: '自动扫荡', desc: '某难度 Boss 累计击败 100 次后开放，冷却结束自动获得奖励。', cond: () => maxBossKillCount() >= 100 },
+  { key: 'owgi', name: '奥义系统', desc: '10 个一阶职业全部精通后解锁：攻击 / 受击积攒奥义槽，满槽释放强力奥义。', cond: () => owgiUnlocked() },
+  { key: 'starBeast', name: '星晶兽', desc: '首次击败巴哈姆特后解锁：属性岛第 6 关可投入材料开放星晶兽挑战（当前版本开放后暂不可挑战）。', cond: () => starBeastUnlocked() },
 ];
 let unlockQueue = [];
 function checkUnlocks() {
@@ -3309,6 +3483,9 @@ function updateAll() {
   renderPanels(true);
   renderMap(); // 面板强制刷新时同步重建地图，避免地图停留在空白
   checkUnlocks();
+  // 统计弹窗打开时实时刷新（属性 / 掉率 / 金币等随战斗变化）
+  const sm = $('stats-modal');
+  if (sm && sm.classList.contains('show')) renderStats();
 }
 
 // 收藏点商店：未获得任何命运武器显示「？？？」，获得任意后显示「兑换命运之武器」；点击随机获得一把未获得的
@@ -3428,20 +3605,37 @@ function renderMapInner() {
   let html = '';
   // 岛屿内部（空岛 / 专精岛）
   if (state.mapView === 'island') {
-    const cfg = islandCfg();
+    // 浏览中的岛与挂机中的岛分离：点进岛屿窗口只切换视图，不改变战斗目标
+    const viewId = state.viewIslandId || state.islandId;
+    const viewingCurrent = viewId === state.islandId;
+    const cfg = islandCfg(viewId);
     const exp = cfg.expert;
     html += `<div class="island-head"><button class="panel-toggle" data-island-back="1">← 返回</button></div>`;
     html += `<div class="chapter"><div class="chapter-name"><span class="cnum">🏝️ ${cfg.name}</span> <span class="hint">${exp ? `${exp.element} · 第 10 关 BOSS 掉落 ${exp.cert} · 装备${exp.type}类武器时伤害 ×1.5 / 受伤 ×0.5` : `${cfg.attr}属性 · ${cfg.stages} 关 · 掉落与 9-10 一致`}</span></div><div class="area-grid">`;
-    const islandProg = islandProgMap();
+    const islandProg = islandProgMap(viewId);
     for (let s = 1; s <= cfg.stages; s++) {
       const unlocked = s === 1 || (islandProg[s - 1] || 0) >= 10;
-      const cls = 'area' + (state.islandIdx === s ? ' current' : (s < state.islandIdx ? ' cleared' : '')) + (unlocked ? '' : ' locked');
+      const cls = 'area' + (viewingCurrent && state.islandIdx === s ? ' current' : (viewingCurrent && s < state.islandIdx ? ' cleared' : '')) + (unlocked ? '' : ' locked');
       const label = unlocked ? (exp && s === 10 ? '👑' : s) : '🔒';
       html += `<button class="${cls}" data-island-stage="${s}" data-island-tip="${s}" ${unlocked ? '' : 'disabled'}>${label}</button>`;
     }
+    // 元素岛第 6 关：星晶兽（首次击败巴哈姆特后解锁开放，开放后暂不可挑战）
+    if (!exp) {
+      const sb = STAR_BEASTS.find(x => x.id === viewId);
+      if (sb) {
+        const open = !!(state.starBeasts && state.starBeasts[sb.id]);
+        const unlockedSb = starBeastUnlocked();
+        const clsSb = 'area' + (open ? ' cleared' : (unlockedSb ? '' : ' locked'));
+        html += `<button class="${clsSb}${open ? ' star-open' : ''}" data-star-beast="${sb.id}" data-star-tip="${sb.id}">${open ? '⚡' : (unlockedSb ? '⚡' : '🔒')}</button>`;
+      }
+    }
     html += '</div></div>';
-    const prog = Math.min(10, islandProg[state.islandIdx] || 0);
-    html += `<div class="island-progress">当前第 ${state.islandIdx} 关进度：<b>${prog}/10</b>（满 10 解锁下一关）</div>`;
+    if (viewingCurrent) {
+      const prog = Math.min(10, islandProg[state.islandIdx] || 0);
+      html += `<div class="island-progress">当前第 ${state.islandIdx} 关进度：<b>${prog}/10</b>（满 10 解锁下一关）</div>`;
+    } else {
+      html += `<div class="island-progress">浏览中：${cfg.name} · 点击任意关卡切换挂机目标（当前仍在 ${islandCfg().name} 第 ${state.islandIdx} 关战斗）</div>`;
+    }
     mapEl.innerHTML = html;
     chapterGlowState = [];
     updateMapHint();
@@ -3934,15 +4128,33 @@ function renderDungeon() {
       : `${attrText} · 生命 ??? · 攻击 ??? · ${tag}`;
     // 首通奖励提示：未击败该难度时显示，首次击败后消失
     const zoeDiffKillsNow = vhOn ? (state.vhZoeKills || 0) : hardOn ? (state.hardZoeKills || 0) : (state.bossKills.zoe || 0);
+    const diffFirst = (k) => (k || 0) === 0;
     let firstClearHint = '';
-    if (b.id === 'zoe' && zoeDiffKillsNow === 0) {
-      if (vhOn) firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁成就点金币加成 + 宇宙长剑可突破至 Lv.100</div>`;
-      else if (!hardOn) firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁成就点经验加成 + 银天之辉</div>`;
+    if (b.id === 'zoe') {
+      if (zoeDiffKillsNow === 0) {
+        if (vhOn) firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁成就点金币加成 + 宇宙长剑可突破至 Lv.100</div>`;
+        else if (hardOn) firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁宇宙长剑（可突破至 Lv.80）+ 银天之辉</div>`;
+        else firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁成就点经验加成 + 银天之辉</div>`;
+      }
     } else if (b.tenshiWeapon && (state.bossKills[b.id] || 0) === 0) {
       const twName = WEAPON_BY_ID[b.tenshiWeapon].name;
-      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁「${twName}」突破至 Lv.80</div>`;
-    } else if (b.id === 'bahamut' && !state.bahamutFirstCleared && (state.bossKills.bahamut || 0) === 0) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁「${twName}」突破至 Lv.80 + ${b.featherName || '羽毛'} ×1</div>`;
+    } else if (b.id === 'bahamut' && hardOn && diffFirst(state.bahaHardKills)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：巴哈姆特的紫电角 ×1 + 解锁 SR 巴哈武器突破</div>`;
+    } else if (b.id === 'bahamut' && !state.bahamutFirstCleared && diffFirst(state.bossKills.bahamut)) {
       firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：必定掉落 巴哈姆特之角 ×1</div>`;
+    } else if (b.id === 'tiamat' && !hardOn && diffFirst(state.bossKills.tiamat)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁土之岛 + 风晶之元素 ×1</div>`;
+    } else if (b.id === 'yggdrasil' && !hardOn && diffFirst(state.bossKills.yggdrasil)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁水之岛 + 土晶之元素 ×1</div>`;
+    } else if (b.id === 'leviathan' && !hardOn && diffFirst(state.bossKills.leviathan)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁火之岛 + 水晶之元素 ×1</div>`;
+    } else if (b.id === 'colossus' && !hardOn && diffFirst(state.bossKills.colossus)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：解锁光之岛与暗之岛 + 火晶之元素 ×1</div>`;
+    } else if (b.id === 'chivalier' && !hardOn && diffFirst(state.bossKills.chivalier)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：光晶之元素 ×1</div>`;
+    } else if (b.id === 'celeste' && !hardOn && diffFirst(state.bossKills.celeste)) {
+      firstClearHint = `<div class="dungeon-reward">🎁 首通奖励：暗晶之元素 ×1</div>`;
     }
     // 天司 Boss：显示专属羽毛掉落（含实际掉率加成后的百分比）
     const featherPct = (0.005 * (1 + achievementPoints() * ACH_POINTS_PER) * totalDropMul() * 100).toFixed(2);
@@ -4720,11 +4932,13 @@ function checkAchievements(silent) {
   if (Object.values(state.jobs || {}).some(j => j.level >= JOB_MAX)) unlockAchievement('job_first_master', silent);
   if (JOBS.every(j => state.jobs[j.id] && state.jobs[j.id].level >= JOB_MAX)) unlockAchievement('job_all_master', silent);
   if ((state.bahaHardKills || 0) > 0) unlockAchievement('baha_hard_first', silent);
+  if (state.starBeasts && (state.starBeasts.nezhaKills || 0) > 0) unlockAchievement('nezha_first', silent);
   if (state.hardZoeKills > 0) unlockAchievement('zoe_hard_first', silent);
   if (state.vhCleared || (state.vhZoeKills || 0) > 0) unlockAchievement('zoe_vh_first', silent);
   if (state.rank >= 1) unlockAchievement('rank_1', silent);
   if (state.rank >= 2) unlockAchievement('rank_2', silent);
   if (state.rank >= 3) unlockAchievement('rank_3', silent);
+  if (state.rank >= 4) unlockAchievement('rank_4', silent);
   if (state.weapons[MED_WING_BLADE.id] && state.weapons[MED_WING_BLADE.id].level >= 40)
     unlockAchievement('med_wing_max', silent);
   if (state.weapons[MED_WING_BLADE.id] && state.weapons[MED_WING_BLADE.id].level >= 80)
@@ -4774,7 +4988,7 @@ function checkAchievements(silent) {
 // 成就所属 RANK 阶段（1-4）
 function achRankOfId(id) {
   // 专精岛 / 职业（RANK 4）
-  if (/^(expert_|job_|baha_hard_)/.test(id)) return 4;
+  if (/^(expert_|job_|baha_hard_|rank_4$|nezha_)/.test(id)) return 4;
   // 长剑极意 / 长剑通神 / 原型之敌 → RANK 2
   if (/^(med_wing_|bahamut_)/.test(id)) return 2;
   // 翼之残影（首次击败佐伊）→ RANK 1
@@ -4800,7 +5014,8 @@ function renderAchievements() {
       .join('');
   }
   grid.innerHTML = ACHIEVEMENTS
-    .filter(a => !(a.invisible && !state.achievements[a.id])) // 隐藏型成就：未解锁前完全不在界面显示
+    // 只显示当前 RANK 及之前（+1）阶段的成就
+    .filter(a => achRankOfId(a.id) <= Math.max(1, Math.min(4, (state.rank || 0) + 1)))
     .filter(a => !(state.hideAchievements && state.achievements[a.id]))
     .filter(a => cur === 'ALL' || achRankOfId(a.id) === Number(cur))
     .sort((a, b) => (a.points || 1) - (b.points || 1)) // 按成就点从少到多排序
@@ -4808,7 +5023,8 @@ function renderAchievements() {
     const done = !!state.achievements[a.id];
     const pts = a.points || 1;
     let name = a.name, desc = a.desc;
-    if (a.hidden && !done) { name = '？？？'; desc = '第一次获得？？？'; }
+    // 命运之武器成就：未获得前完全隐藏（？？？）
+    if (/^fateown_/.test(a.id) && !done) { name = '？？？'; desc = '第一次获得？？？'; }
     return `<div class="ach ${done ? 'done' : ''}">
       <div class="ach-icon">${done ? '🏆' : '🔒'}</div>
       <div class="ach-info"><div class="ach-name">${name}${pts > 1 ? ` <span class="ach-pts">+${pts}</span>` : ''}</div><div class="ach-desc">${desc}</div></div>
@@ -4835,7 +5051,7 @@ function buildSaveData() {
     decayedWeapons: state.decayedWeapons,
     bahaUnlocked: state.bahaUnlocked,
     bahaAwakened: state.bahaAwakened, purpleHorn: state.purpleHorn, bahaHardFirst: state.bahaHardFirst, bahaHard: state.bahaHard, bahaHardKills: state.bahaHardKills,
-    owgi: state.owgi, owgiShield: state.owgiShield, healBuffTurns: state.healBuffTurns, owgiAuto: state.owgiAuto, pierceTurns: state.pierceTurns,
+    owgi: state.owgi, owgiShield: state.owgiShield, healBuffTurns: state.healBuffTurns, owgiAuto: state.owgiAuto, pierceTurns: state.pierceTurns, starBeasts: state.starBeasts,
     tiamatHard: state.tiamatHard,
     tiamatHardKills: state.tiamatHardKills,
     yggHard: state.yggHard,
@@ -4919,6 +5135,7 @@ function applySaveData(d) {
   state.healBuffTurns = d.healBuffTurns || 0;
   state.owgiAuto = d.owgiAuto !== false; // 缺省开启（旧存档也默认自动释放）
   state.pierceTurns = d.pierceTurns || 0;
+  state.starBeasts = (d.starBeasts && typeof d.starBeasts === 'object') ? d.starBeasts : {};
   state.tiamatHard = d.tiamatHard === true;
   state.tiamatHardKills = d.tiamatHardKills || 0;
   state.yggHard = d.yggHard === true;
@@ -5067,7 +5284,7 @@ function resetGame() {
   state = {
     currentIdx: 1, unlockedIdx: 1, progressKills: 0, kills: 0, gold: 0,
     level: 1, exp: 0,
-    points: 0, fates: {}, achievements: {}, dungeonCleared: false, expBuyLevel: 0, dropBuyLevel: 0, silverGlory: 0, bahamutHorn: 0, bahamutFirstCleared: false, sealBroken: false, decayedWeapons: {}, bahaUnlocked: false, bahaAwakened: {}, purpleHorn: 0, bahaHardFirst: false, bahaHard: false, bahaHardKills: 0, owgi: 0, owgiShield: 0, healBuffTurns: 0, owgiAuto: true, pierceTurns: 0, bowRapid: false, fistCapUp: false, dummyMode: false, tiamatHard: false, tiamatHardKills: 0, yggHard: false, yggHardKills: 0, leviHard: false, leviHardKills: 0, coloHard: false, coloHardKills: 0, chivHard: false, chivHardKills: 0, celesteHard: false, celesteHardKills: 0, tenshiAwakened: {}, fireFeather: 0, waterFeather: 0, earthFeather: 0, windFeather: 0, lightFeather: 0, darkFeather: 0, medWingAwakened: false, medWingAwakened2: false, vhCleared: false, verdantCrystal: 0, hardZoeKills: 0, vhZoeKills: 0, bossCooldowns: {}, rank: 0, rankFight: null, everHadPoints: false, bossKills: {}, goldBoostLevel: 0, pointDropLevel: 0, equipped: null,
+    points: 0, fates: {}, achievements: {}, dungeonCleared: false, expBuyLevel: 0, dropBuyLevel: 0, silverGlory: 0, bahamutHorn: 0, bahamutFirstCleared: false, sealBroken: false, decayedWeapons: {}, bahaUnlocked: false, bahaAwakened: {}, purpleHorn: 0, bahaHardFirst: false, bahaHard: false, bahaHardKills: 0, owgi: 0, owgiShield: 0, healBuffTurns: 0, owgiAuto: true, pierceTurns: 0, bowRapid: false, fistCapUp: false, dummyMode: false, starBeasts: {}, tiamatHard: false, tiamatHardKills: 0, yggHard: false, yggHardKills: 0, leviHard: false, leviHardKills: 0, coloHard: false, coloHardKills: 0, chivHard: false, chivHardKills: 0, celesteHard: false, celesteHardKills: 0, tenshiAwakened: {}, fireFeather: 0, waterFeather: 0, earthFeather: 0, windFeather: 0, lightFeather: 0, darkFeather: 0, medWingAwakened: false, medWingAwakened2: false, vhCleared: false, verdantCrystal: 0, hardZoeKills: 0, vhZoeKills: 0, bossCooldowns: {}, rank: 0, rankFight: null, everHadPoints: false, bossKills: {}, goldBoostLevel: 0, pointDropLevel: 0, equipped: null,
     weaponFilter: 'ALL', weaponAttrFilter: 'ALL', weaponTypeFilter: 'ALL', notifyUpgrade: true, hidePointLog: false, autoAdvance: false, hideAchievements: false, autoBoss: {}, autoSweep: {}, hiddenBosses: {}, hideBossReward: false, hiddenBossMsgs: {}, zoeHard: false, zoeVH: false, collapsed: {},
     islandIdx: 0, islandId: 'wind', hiddenChapters: {}, amberEyes: 0, islandProgress: {}, earthProgress: {}, seaProgress: {}, sunProgress: {}, lightProgress: {}, darkProgress: {}, earthBud: 0, seaFan: 0, sunCore: 0, starPlankton: 0, darkShard: 0, windCrystal: 0, earthCrystal: 0, waterCrystal: 0, fireCrystal: 0, lightCrystal: 0, darkCrystal: 0, tiamatCleared: false, yggCleared: false, leviCleared: false, coloCleared: false,
     expertProgress: {}, jobs: {}, currentJob: null, mapView: 'main', inMap: false, seenUnlocks: {}, expertCertGiven: {}, achFilter: 'ALL',
@@ -5500,6 +5717,7 @@ $('map').addEventListener('click', function (e) {
       return;
     }
     state.islandId = 'expert_' + eid;
+    state.viewIslandId = ''; // 专精岛按实际挂机岛渲染，避免沿用之前浏览的元素岛
     state.islandIdx = 1;
     state.inMap = true;
     state.mapView = 'island';
@@ -5523,28 +5741,29 @@ $('map').addEventListener('click', function (e) {
     if (id === 'sea' && !state.yggCleared) return;
     if (id === 'sun' && !state.leviCleared) return;
     if ((id === 'light' || id === 'dark') && !state.coloCleared) return;
-    state.islandId = id;
-    state.islandIdx = 1;
-    state.inMap = true;
+    // 只切换浏览视图，不改变当前战斗目标（继续与原先的怪物战斗）
+    state.viewIslandId = id;
     state.mapView = 'island';
-    state.autoProgress = 0;
-    state.playerHp = playerMaxHp();
-    spawnMonster();
-    const cfg = islandCfg();
-    log(`🏝️ 进入空岛 · <span class="area">${cfg.name}</span> 第 1 关（${cfg.attr}属性）。`, 'area');
     renderMap();
     updateAll();
     save(true);
     return;
   }
   // 空岛关卡切换
+  const starBtn = e.target.closest('[data-star-beast]');
+  if (starBtn) { handleStarBeast(starBtn.dataset.starBeast); return; }
   const stageBtn = e.target.closest('[data-island-stage]');
   if (stageBtn) {
     const s = parseInt(stageBtn.dataset.islandStage, 10);
-    if (s === state.islandIdx) return;
-    const islandProg = islandProgMap();
+    const targetId = state.viewIslandId || state.islandId;
+    const switchingIsland = targetId !== state.islandId;
+    if (!switchingIsland && s === state.islandIdx) return;
+    const islandProg = islandProgMap(targetId);
     if (s !== 1 && (islandProg[s - 1] || 0) < 10) return; // 未解锁
+    state.islandId = targetId;
+    state.viewIslandId = '';
     state.islandIdx = s;
+    state.inMap = true;
     state.playerHp = playerMaxHp();
     spawnMonster();
     log(`🏝️ 切换到 ${islandCfg().name} 第 <span class="area">${s}</span> 关。`, 'area');
@@ -5658,6 +5877,8 @@ function showIslandStageTip(stage, x, y) {
     html += `<div class="tip-row">🗡 掉落前九章所有 <b>${cfg.expert.type}</b> 类武器 <span class="tip-p">${ratePair(dropRate(90), effectiveDropRate(90))}</span></div>`;
     if (stage === 10) html += `<div class="tip-row">📜 首通掉落 ${cfg.expert.cert} ×1</div>`;
     html += `<div class="tip-row">⚔ 装备${cfg.expert.type}类武器：伤害 ×1.5 / 受伤 ×0.5</div>`;
+  } else {
+    html += `<div class="tip-row">🗡 掉落前九章所有武器 <span class="tip-p">${ratePair(dropRate(90), effectiveDropRate(90))}</span></div>`;
   }
   html += `<div class="tip-row fate-row">${cfg.materialIcon} ${cfg.material} 基础掉率 <span class="tip-p">${(base * 100).toFixed(2)}%</span></div>`;
   html += `<div class="tip-row">含加成实际掉率 <b>${(actual * 100).toFixed(2)}%</b>（成就点 + 金币掉落）</div>`;
@@ -5666,7 +5887,46 @@ function showIslandStageTip(stage, x, y) {
   areaTip.style.left = Math.min(x + 14, window.innerWidth - 360) + 'px';
   areaTip.style.top = (y + 14) + 'px';
 }
+// 星晶兽悬停：开放材料与状态
+function showStarBeastTip(id, x, y) {
+  const sb = STAR_BEASTS.find(v => v.id === id);
+  if (!sb) return;
+  const open = !!(state.starBeasts && state.starBeasts[sb.id]);
+  let html = `<div class="tip-title">⚡ 星晶兽 · ${sb.name}（${sb.attr}属性）</div>`;
+  html += `<div class="tip-row">所在：${islandCfg(sb.id).name} 第 6 关</div>`;
+  if (!starBeastUnlocked()) {
+    html += `<div class="tip-row fate-row">🔒 需首次击败巴哈姆特后解锁</div>`;
+  } else if (open) {
+    if (sb.id === 'wind') {
+      html += `<div class="tip-row fate-row">✅ 已开放 · 可挑战（点击进入战斗）</div>`;
+    } else {
+      html += `<div class="tip-row fate-row">✅ 已开放（暂不可挑战）</div>`;
+    }
+    html += `<div class="tip-row">开放材料已投入，之后挑战不再消耗材料</div>`;
+  } else {
+    html += `<div class="tip-row fate-row">📦 点击可投入材料开放挑战</div>`;
+    starBeastCost(sb).forEach(([k, n]) => {
+      const have = state[k] || 0;
+      const ok = have >= n;
+      html += `<div class="tip-row">${STAR_MAT_NAMES[k] || k} <span class="tip-p" style="color:${ok ? '#8fbf8f' : '#e57373'}">${fmt(have)}/${fmt(n)}</span></div>`;
+    });
+  }
+  // 掉落：基础 → 实际（星晶兽同样显示掉率）
+  const nBoost = (1 + achievementPoints() * ACH_POINTS_PER) * totalDropMul();
+  NEZHA_WEAPONS.forEach(w => {
+    html += `<div class="tip-row">⚔ ${w.name} 基础 0.04% → 实际 <b>${(0.0004 * nBoost * 100).toFixed(2)}%</b></div>`;
+  });
+  areaTip.innerHTML = html;
+  areaTip.classList.add('show');
+  areaTip.style.left = Math.min(x + 14, window.innerWidth - 360) + 'px';
+  areaTip.style.top = (y + 14) + 'px';
+}
 $('map').addEventListener('mouseover', function (e) {
+  const starTipBtn = e.target.closest('[data-star-tip]');
+  if (starTipBtn) {
+    showStarBeastTip(starTipBtn.dataset.starTip, e.clientX, e.clientY);
+    return;
+  }
   const stageBtn = e.target.closest('[data-island-tip]');
   if (stageBtn) {
     showIslandStageTip(parseInt(stageBtn.dataset.islandTip, 10), e.clientX, e.clientY);
@@ -5682,8 +5942,8 @@ $('map').addEventListener('mousemove', function (e) {
   areaTip.style.top = (e.clientY + 14) + 'px';
 });
 $('map').addEventListener('mouseout', function (e) {
-  const from = e.target.closest('.area, [data-island-tip]');
-  const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('.area, [data-island-tip]') : null;
+  const from = e.target.closest('.area, [data-island-tip], [data-star-tip]');
+  const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('.area, [data-island-tip], [data-star-tip]') : null;
   if (from && from !== to) hideAreaTip();
 });
 

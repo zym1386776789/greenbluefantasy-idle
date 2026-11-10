@@ -122,16 +122,16 @@
   .round { text-align: center; font-size: 12px; color: var(--muted); margin-top: 8px; letter-spacing: 1px; }
   .fighter .nums { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .heal-float {
-    position: absolute; left: 50%; top: 34%;
-    font-size: 17px; font-weight: 800; color: #5fe08a;
+    position: absolute; right: 8px; top: 6px;
+    font-size: 16px; font-weight: 800; color: #5fe08a;
     text-shadow: 0 0 8px rgba(95,224,138,.8);
     pointer-events: none; z-index: 5;
     animation: healFloat 1.1s ease-out forwards;
   }
   @keyframes healFloat {
-    0% { opacity: 0; transform: translate(-50%, 8px) scale(.85); }
+    0% { opacity: 0; transform: translateY(8px) scale(.85); }
     18% { opacity: 1; }
-    100% { opacity: 0; transform: translate(-50%, -30px) scale(1.12); }
+    100% { opacity: 0; transform: translateY(-22px) scale(1.12); }
   }
   .bar .fill.heal-flash { animation: healFlash .5s ease-out; }
   @keyframes healFlash {
@@ -162,6 +162,7 @@
   .job-buff.on { color: #ffd76a; border-color: rgba(255,215,106,.6); box-shadow: 0 0 6px rgba(255,215,106,.25); }
   .job-buff.pro { color: #9fd0ff; border-color: rgba(120,180,255,.45); }
   .fighter.player.pro-active { box-shadow: 0 0 0 1px rgba(120,180,255,.35), 0 0 14px rgba(120,180,255,.16); }
+  .area.star-open { border-color: rgba(255,215,106,.75); box-shadow: 0 0 10px rgba(255,215,106,.35); }
   button.active { color: #ffd76a; border-color: rgba(255,215,106,.65); background: rgba(255,215,106,.12); }
   .fighter.player.shield-active { box-shadow: 0 0 0 2px rgba(120,180,255,.55), 0 0 18px rgba(120,180,255,.32); }
   .fighter.player.shield-cast { animation: shieldCast .5s ease-out; }
