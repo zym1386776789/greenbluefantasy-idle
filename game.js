@@ -5869,21 +5869,36 @@ function renderCollectibles() {
     el = document.getElementById('collect-list');
   }
   const fateCount = Object.keys(state.fates || {}).filter(k => state.fates[k]).length;
-  let html = `<div class="stat-name">命运之武器（${fateCount} / 10）</div>`;
+  const fateTitleName = fateCount > 0 ? '命运之武器' : '？？？';
+  let html = `<div class="stat-name">${fateTitleName}（${fateCount} / 10）</div>`;
   html += FATE_WEAPONS.map(f => state.fates[f.id]
     ? `<div class="stat-row">🏺 <b>${f.name}</b> · ${f.type} · 攻击 +${(f.bonusAtk * 100).toFixed(0)}% / 生命 +${(f.bonusHp * 100).toFixed(0)}%</div>`
     : `<div class="stat-row">🏺 ？？？</div>`).join('');
   html += '<div class="stat-name">岛屿收藏品</div>';
-  html += ISLAND_COLLECTIBLES.map(c => {
+  // 只展示已解锁岛屿的收藏品（风之岛默认开放）
+  const unlockedCols = ISLAND_COLLECTIBLES.filter(c => {
+    if (c.island === 'wind') return true;
+    if (c.island === 'earth') return !!state.tiamatCleared;
+    if (c.island === 'sea') return !!state.yggCleared;
+    if (c.island === 'sun') return !!state.leviCleared;
+    if (c.island === 'light' || c.island === 'dark') return !!state.coloCleared;
+    return false;
+  });
+  if (!unlockedCols.length) {
+    html += '<div class="stat-row">暂无已解锁岛屿的收藏品</div>';
+  }
+  html += unlockedCols.map(c => {
     const got = !!state.collectibles[c.id];
     return got
       ? `<div class="stat-row">🏺 <b>${c.name}</b> · ${c.desc}</div>`
       : `<div class="stat-row">🏺 ？？？</div>`;
   }).join('');
-  const remainCols = ISLAND_COLLECTIBLES.filter(c => !state.collectibles[c.id]);
-  html += remainCols.length
-    ? '<div class="stat-row">🏪 可在「收藏点商店」用收藏点兑换未获得的岛屿收藏品</div>'
-    : '<div class="stat-row">✅ 已集齐全部岛屿收藏品</div>';
+  const remainCols = unlockedCols.filter(c => !state.collectibles[c.id]);
+  if (remainCols.length) {
+    html += '<div class="stat-row">🏪 可在「收藏点商店」用收藏点兑换未获得的岛屿收藏品</div>';
+  } else if (unlockedCols.length) {
+    html += '<div class="stat-row">✅ 已集齐已解锁岛屿的全部收藏品</div>';
+  }
   el.innerHTML = html;
 }
 
