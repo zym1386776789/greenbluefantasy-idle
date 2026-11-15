@@ -3978,6 +3978,12 @@ function renderStats() {
   const SQ_LISTS = { '风': MAGNA_WEAPONS, '土': YGG_MAGNA_WEAPONS, '水': LEVI_MAGNA_WEAPONS, '火': COLO_MAGNA_WEAPONS };
   let html = '<div class="stat-grid">';
   for (const [attr, icon] of ATTRS) {
+    // 该属性一把武器都没有时不展示这张卡片
+    const hasThisAttr = Object.keys(state.weapons).some(function (wid) {
+      const d = WEAPON_BY_ID[wid];
+      return d && (d.attr || '无') === attr;
+    });
+    if (!hasThisAttr) continue;
     let sqAtk = 0, sqHp = 0, sqBw = 0;
     if (attr === '风') { const s = magnaSquareBonus(); sqAtk += s.atk; sqHp += s.hp; }
     else if (attr === '土') {
@@ -4146,22 +4152,22 @@ function renderStats() {
   }
   html += `<div class="stat-global">
     <div class="stat-name">🌐 全局乘区（对所有武器生效）</div>
-    <div class="stat-row">命运武器：攻击 ×${f.atk.toFixed(3)} · 生命 ×${f.hp.toFixed(3)}</div>
     <div class="stat-row">等级：×${lm.toFixed(3)}（Lv.${state.level}）</div>
-    <div class="stat-row">宇宙的权能：×${cosmic.toFixed(3)}${state.medWingAwakened ? '' : '（未突破）'}</div>
-    <div class="stat-row">创世之龙的加护：生命 ×${dragon.toFixed(3)}</div>
-    <div class="stat-row">天司（按敌方属性）：伤害 +${((tenshiDamageMul('风') - 1) * 100).toFixed(0)}%</div>
-    <div class="stat-row">连击：DA ${(state.daRate * 100).toFixed(0)}% · TA ${(state.taRate * 100).toFixed(0)}%（先判 TA，失败再判 DA）</div>
+    ${(f.atk !== 1 || f.hp !== 1) ? `<div class="stat-row">命运武器：攻击 ×${f.atk.toFixed(3)} · 生命 ×${f.hp.toFixed(3)}</div>` : ''}
+    ${state.medWingAwakened ? `<div class="stat-row">宇宙的权能：×${cosmic.toFixed(3)}</div>` : ''}
+    ${dragon !== 1 ? `<div class="stat-row">创世之龙的加护：生命 ×${dragon.toFixed(3)}</div>` : ''}
+    ${tenshiDamageMul('风') !== 1 ? `<div class="stat-row">天司（按敌方属性）：伤害 +${((tenshiDamageMul('风') - 1) * 100).toFixed(0)}%</div>` : ''}
+    ${((state.daRate || 0) + daModifierOf() + taModifierOf()) !== 0 ? `<div class="stat-row">连击：DA ${(state.daRate * 100).toFixed(0)}% · TA ${(state.taRate * 100).toFixed(0)}%（先判 TA，失败再判 DA）</div>` : ''}
   </div>`;
-  // 职业精通加成（常驻）
+  // 职业精通加成（常驻）：没有精通职业时不显示整块
   // 当前职业按本职 100% 生效，其精通奖励不额外叠加
   const masteredJobs = JOBS.filter(j => jobMastered(j.id) && j.id !== state.currentJob);
-  html += `<div class="stat-global">
-    <div class="stat-name">🏅 职业精通加成（常驻）</div>
-    ${masteredJobs.length
-      ? masteredJobs.map(j => `<div class="stat-row">${j.name}：${j.mastery}</div>`).join('')
-      : '<div class="stat-row">暂无已精通职业（精通后被动以 5% 效果全局生效）</div>'}
-  </div>`;
+  if (masteredJobs.length) {
+    html += `<div class="stat-global">
+      <div class="stat-name">🏅 职业精通加成（常驻）</div>
+      ${masteredJobs.map(j => `<div class="stat-row">${j.name}：${j.mastery}</div>`).join('')}
+    </div>`;
+  }
   // 人物属性推算（各属性武器贡献 → 乘区 → 最终面板）
   const bd = attrBreakdown();
   const attrOrder = ['风', '土', '水', '火', '光', '暗', '无'];
@@ -4176,10 +4182,10 @@ function renderStats() {
     <div class="stat-row">各属性武器贡献（已装备 ×100%，未装备 ×10%）</div>
     ${attrRows || '<div class="stat-row">暂无武器</div>'}
     <div class="stat-row">武器总和：攻 <b>${fmt(bd.sumAtk)}</b> · 命 <b>${fmt(bd.sumHp)}</b></div>
-    <div class="stat-row">× 命运武器：攻 ×${bd.f.atk.toFixed(3)} · 命 ×${bd.f.hp.toFixed(3)}</div>
+    ${(bd.f.atk !== 1 || bd.f.hp !== 1) ? `<div class="stat-row">× 命运武器：攻 ×${bd.f.atk.toFixed(3)} · 命 ×${bd.f.hp.toFixed(3)}</div>` : ''}
     <div class="stat-row">× 等级 Lv.${state.level}：×${bd.lm.toFixed(3)}</div>
-    <div class="stat-row">× 宇宙的权能：×${bd.cosmicMul.toFixed(3)}</div>
-    <div class="stat-row">× 创世之龙的加护（仅生命）：×${bd.dragonHp.toFixed(3)}</div>
+    ${bd.cosmicMul !== 1 ? `<div class="stat-row">× 宇宙的权能：×${bd.cosmicMul.toFixed(3)}</div>` : ''}
+    ${bd.dragonHp !== 1 ? `<div class="stat-row">× 创世之龙的加护（仅生命）：×${bd.dragonHp.toFixed(3)}</div>` : ''}
     <div class="stat-row">= 最终：攻 <b>${fmt(bd.atk)}</b> · 命 <b>${fmt(bd.hp)}</b></div>
   </div>`;
   el.innerHTML = html;
