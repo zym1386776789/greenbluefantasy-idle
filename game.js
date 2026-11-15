@@ -2233,7 +2233,7 @@ function findBestWeapon() {
 function battleTick() {
   if (paused) return;
   if (state.dungeonFight || state.rankFight) { dungeonTick(); return; }
-  if (!state.inMap) { updateBattleUI(); return; } // 未进入地图/岛屿：暂停战斗，显示「冒险中」
+  if (!state.monster) spawnMonster(); // 没有怪物就立即生成，不再依赖 inMap
   if (!state.monster) return;
 
   // 攻速读条：100ms 帧推进 0.2（1x），读满 1 出手
@@ -3902,7 +3902,7 @@ function updateBattleUI() {
   }
 
   const m = state.monster;
-  if (!state.inMap) {
+  if (!m) {
     $('bar-monster').style.transform = 'scaleX(0)';
     $('monster-name').textContent = '冒险中';
     const maIdle = $('monster-attr');
@@ -6099,7 +6099,7 @@ function applySaveData(d) {
   state.jobs = (d.jobs && typeof d.jobs === 'object') ? d.jobs : {};
   state.currentJob = (typeof d.currentJob === 'string') ? d.currentJob : null;
   state.mapView = (d.mapView === 'chapters' || d.mapView === 'islands') ? d.mapView : 'main';
-  state.inMap = d.inMap === true;
+  state.inMap = true;
   state.seenUnlocks = (d.seenUnlocks && typeof d.seenUnlocks === 'object') ? d.seenUnlocks : {};
   state.achFilter = ['ALL', '1', '2', '3', '4'].includes(d.achFilter) ? d.achFilter : 'ALL';
   state.expertCertGiven = (d.expertCertGiven && typeof d.expertCertGiven === 'object') ? d.expertCertGiven : {};
@@ -7604,6 +7604,8 @@ setInterval(function () {
   }
   const now = Date.now();
   if (now - wdAt > 12000 && now - wdRecoverAt > 60000) {
+    state.inMap = true;
+    if (!state.monster) spawnMonster();
     startBattle();
     wdRecoverAt = now; wdAt = now;
     log('🔧 检测到战斗停滞，已自动恢复。', 'area');
