@@ -1632,6 +1632,8 @@ const COLLECTIBLE_BY_ID = {};
 ISLAND_COLLECTIBLES.forEach(c => { COLLECTIBLE_BY_ID[c.id] = c; });
 // 岛屿收藏品是否可获取（对应岛屿已解锁）
 function collectibleUnlocked(islandId) {
+  // 元素岛（RANK 2 开放）之前，岛屿收藏品一律不可获取、商店不出现兑换选项
+  if (!(state.rank >= 2)) return false;
   if (islandId === 'wind') return true;
   if (islandId === 'earth') return !!state.tiamatCleared;
   if (islandId === 'sea') return !!state.yggCleared;
@@ -4377,7 +4379,7 @@ function renderShop() {
   const remainCols = unlockedColsShop.filter(c => !state.collectibles[c.id]);
   const colPrice = (unlockedColsShop.length - remainCols.length + 1) * 1000000;
   const colItem = remainCols.length === 0
-    ? '<div class="shop-empty">暂无可兑换的岛屿收藏品（先解锁对应岛屿）</div>'
+    ? ''
     : `<div class="shop-item">
         <div class="shop-icon">🏺</div>
         <div class="shop-info">
