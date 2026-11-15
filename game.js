@@ -1630,6 +1630,15 @@ const ISLAND_COLLECTIBLES = [
 ];
 const COLLECTIBLE_BY_ID = {};
 ISLAND_COLLECTIBLES.forEach(c => { COLLECTIBLE_BY_ID[c.id] = c; });
+// 岛屿收藏品是否可获取（对应岛屿已解锁）
+function collectibleUnlocked(islandId) {
+  if (islandId === 'wind') return true;
+  if (islandId === 'earth') return !!state.tiamatCleared;
+  if (islandId === 'sea') return !!state.yggCleared;
+  if (islandId === 'sun') return !!state.leviCleared;
+  if (islandId === 'light' || islandId === 'dark') return !!state.coloCleared;
+  return false;
+}
 const COLLECTIBLE_RATE = 0.0001; // 0.01% 独立掉率，不吃任何加成
 
 // ===== 星晶兽 · 烈焰·琉璃（火之岛第 6 关）=====
@@ -4364,15 +4373,16 @@ function renderShop() {
       </div>`;
 
   // 六岛收藏品兑换（随机给未获得的一件；首次 100 万，之后每件 +100 万）
-  const remainCols = ISLAND_COLLECTIBLES.filter(c => !state.collectibles[c.id]);
-  const colPrice = (ISLAND_COLLECTIBLES.length - remainCols.length + 1) * 1000000;
+  const unlockedColsShop = ISLAND_COLLECTIBLES.filter(c => collectibleUnlocked(c.island));
+  const remainCols = unlockedColsShop.filter(c => !state.collectibles[c.id]);
+  const colPrice = (unlockedColsShop.length - remainCols.length + 1) * 1000000;
   const colItem = remainCols.length === 0
-    ? '<div class="shop-empty">已集齐全部岛屿收藏品</div>'
+    ? '<div class="shop-empty">暂无可兑换的岛屿收藏品（先解锁对应岛屿）</div>'
     : `<div class="shop-item">
         <div class="shop-icon">🏺</div>
         <div class="shop-info">
           <div class="shop-name">兑换岛屿收藏品</div>
-          <div class="shop-desc">随机获得未获得的一件（剩 ${remainCols.length} 件）</div>
+          <div class="shop-desc">随机获得已解锁岛屿中未获得的一件（剩 ${remainCols.length} 件）</div>
         </div>
         <button class="gold" onclick="buyIslandCollectible()" ${state.points >= colPrice ? '' : 'disabled'}>兑换 · ${colPrice.toLocaleString()}</button>
       </div>`;
@@ -5882,14 +5892,7 @@ function renderCollectibles() {
     : `<div class="stat-row">🏺 ？？？</div>`).join('');
   html += '<div class="stat-name">岛屿收藏品</div>';
   // 只展示已解锁岛屿的收藏品（风之岛默认开放）
-  const unlockedCols = ISLAND_COLLECTIBLES.filter(c => {
-    if (c.island === 'wind') return true;
-    if (c.island === 'earth') return !!state.tiamatCleared;
-    if (c.island === 'sea') return !!state.yggCleared;
-    if (c.island === 'sun') return !!state.leviCleared;
-    if (c.island === 'light' || c.island === 'dark') return !!state.coloCleared;
-    return false;
-  });
+  const unlockedCols = ISLAND_COLLECTIBLES.filter(c => collectibleUnlocked(c.island));
   if (!unlockedCols.length) {
     html += '<div class="stat-row">暂无已解锁岛屿的收藏品</div>';
   }
@@ -5910,9 +5913,10 @@ function renderCollectibles() {
 
 // 收藏点兑换岛屿收藏品：首次 100 万，之后每多一件 +100 万；随机给未获得的
 function buyIslandCollectible() {
-  const remain = ISLAND_COLLECTIBLES.filter(c => !state.collectibles[c.id]);
-  if (!remain.length) { toast('已集齐全部岛屿收藏品'); return; }
-  const price = (ISLAND_COLLECTIBLES.length - remain.length + 1) * 1000000;
+  const pool = ISLAND_COLLECTIBLES.filter(c => collectibleUnlocked(c.island));
+  const remain = pool.filter(c => !state.collectibles[c.id]);
+  if (!remain.length) { toast('暂无可兑换的岛屿收藏品（先解锁对应岛屿）'); return; }
+  const price = (pool.length - remain.length + 1) * 1000000;
   if ((state.points || 0) < price) { toast(`收藏点不足（需要 ${fmt(price)}）`); return; }
   state.points -= price;
   const pick = remain[Math.floor(Math.random() * remain.length)];
