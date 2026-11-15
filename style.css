@@ -165,7 +165,7 @@
   .job-buff.sealed { color: #bfe9ff; border-color: rgba(120,200,255,.65); background: rgba(80,160,220,.18); }
   .fighter.player.sealed { box-shadow: 0 0 0 1px rgba(120,200,255,.6), 0 0 20px rgba(80,160,220,.35); }
   .fighter.player.petrified { filter: grayscale(.75) brightness(.92); box-shadow: 0 0 0 1px rgba(150,150,170,.55), 0 0 20px rgba(120,120,140,.3); }
-  .fighter.player.pro-active { box-shadow: 0 0 0 1px rgba(120,180,255,.35), 0 0 14px rgba(120,180,255,.16); }
+  .fighter.player.pro-active { box-shadow: 0 0 0 1px rgba(255,215,106,.35), 0 0 14px rgba(255,215,106,.16); }
   .area.star-open { border-color: rgba(255,215,106,.75); box-shadow: 0 0 10px rgba(255,215,106,.35); }
   button.active { color: #ffd76a; border-color: rgba(255,215,106,.65); background: rgba(255,215,106,.12); }
   .fighter.player.shield-active { box-shadow: 0 0 0 2px rgba(120,180,255,.55), 0 0 18px rgba(120,180,255,.32); }

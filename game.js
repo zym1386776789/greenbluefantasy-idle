@@ -304,12 +304,15 @@ function fateShopCost() {
   return FATE_SHOP_BASE * (Object.keys(state.fates).length + 1);
 }
 // 收藏点商店：金币收益等级花费（100 → 400 → 1600 → 6400 …，每级 ×4）
-function goldBoostCost() { return 100 * Math.pow(4, state.goldBoostLevel); }
+// 海神的泪滴：金币商店 / 收藏点商店的升级项目（金币收益、掉落几率）-10%
+// 不含：收藏品兑换、命运武器兑换、材料商店
+function seaShopDiscount() { return state.collectibles.col_sea ? 0.9 : 1; }
+function goldBoostCost() { return Math.round(100 * Math.pow(4, state.goldBoostLevel) * seaShopDiscount()); }
 function goldMul() { return 1 + state.goldBoostLevel * 0.05; }
 // Very Hard 佐伊首胜后解锁：每 5 点成就点 +1% 金币获取
 function achGoldMul() { return state.vhCleared ? (1 + Math.floor(achievementPoints() / 5) * 0.01) : 1; }
 // 收藏点商店：掉落几率等级（花费与金币收益一致：100 → 400 → 1600 …，每级 +5%）
-function pointDropCost() { return 100 * Math.pow(4, state.pointDropLevel); }
+function pointDropCost() { return Math.round(100 * Math.pow(4, state.pointDropLevel) * seaShopDiscount()); }
 function pointDropMul() { return 1 + state.pointDropLevel * 0.05; }
 // 掉落总倍率 = 金币商店掉落 × 收藏点掉落
 function totalDropMul() { return dropBuyMul() * pointDropMul(); }
@@ -749,11 +752,13 @@ function daModifierOf(attr) {
     if (!state.weapons[w.id]) continue;
     for (const s of w.skills) {
       if (!s.da) continue;
-      if (s.kind !== 'setsuna' && s.kind !== 'kokki') continue;
+      if (s.kind !== 'setsuna' && s.kind !== 'kokki' && s.kind !== 'sanjin') continue;
       if (attr && s.target !== attr) continue;
       d += s.da;
     }
   }
+  // 谴责：玩家 DA 率 -25%（持续 3 回合）
+  if ((state.daDebuffTurns || 0) > 0) d -= (state.daDebuff || 0.25);
   return d;
 }
 // 克己：武器技能提供的暴击率（多把加算）
@@ -767,9 +772,18 @@ function skillCritBonusOf(attr) {
   }
   return c;
 }
-// TA 率修正（暂无武器提供，预留给后续）
+// TA 率修正：三手（暗）
 function taModifierOf(attr) {
-  return 0;
+  let t = 0;
+  for (const w of ALL_MAGNA_SSR) {
+    if (!state.weapons[w.id]) continue;
+    for (const s of w.skills) {
+      if (s.kind !== 'sanjin' || !s.ta) continue;
+      if (attr && s.target !== attr) continue;
+      t += s.ta;
+    }
+  }
+  return t;
 }
 
 // 乱气的背水：拥有塞勒斯特之角·玛格纳时，风属性武器享受背水（曲线与创树一致）
@@ -933,6 +947,12 @@ const ACHIEVEMENTS = [
   { id:'max_ch8', name:'幽冥收藏家', desc:'第八章武器全部满级', points:3 },
   // 每把命运武器各一个成就（5 点成就点；未获得时显示？？？）
   ...FATE_WEAPONS.map(f => ({ id:'fateown_' + f.id, name:f.name, desc:'获得命运之武器 ' + f.name, hidden:true, points:5 })),
+  { id:'colget_col_wind',  name:'收藏品 · 岚龙的遗珠', desc:'获得收藏品「岚龙的遗珠」',  points:30 },
+  { id:'colget_col_earth', name:'收藏品 · 创树的年轮', desc:'获得收藏品「创树的年轮」',  points:30 },
+  { id:'colget_col_sea',   name:'收藏品 · 海神的泪滴', desc:'获得收藏品「海神的泪滴」',  points:30 },
+  { id:'colget_col_sun',   name:'收藏品 · 日珥的余温', desc:'获得收藏品「日珥的余温」',  points:30 },
+  { id:'colget_col_light', name:'收藏品 · 晨曦的碎片', desc:'获得收藏品「晨曦的碎片」',  points:30 },
+  { id:'colget_col_dark',  name:'收藏品 · 黑雾的残响', desc:'获得收藏品「黑雾的残响」',  points:30 },
   // 完成章节（5-8 章 5 点，9 章 10 点）
   { id:'clear_1_10',   name:'平原征服者', desc:'完成 1-10' },
   { id:'clear_2_10',   name:'森林征服者', desc:'完成 2-10' },
@@ -958,6 +978,8 @@ const ACHIEVEMENTS = [
   { id:'medusa_first', name:'星晶兽 · 美杜莎', desc:'击败美杜莎（星晶兽）', points:200, invisible:true },
   { id:'sea_first',    name:'星晶兽 · 玛裘拉·玛利乌斯', desc:'击败玛裘拉·玛利乌斯（星晶兽）', points:200, invisible:true },
   { id:'sun_first',    name:'星晶兽 · 烈焰·琉璃', desc:'击败烈焰·琉璃（星晶兽）', points:200, invisible:true },
+  { id:'apollo_first', name:'星晶兽 · 阿波罗', desc:'击败阿波罗（星晶兽）', points:200, invisible:true },
+  { id:'ovl_first',    name:'星晶兽 · D天使·奥莉薇尔', desc:'击败D天使·奥莉薇尔（星晶兽）', points:200, invisible:true },
   // 集齐并升满（10 点）
   { id:'all_r_max',    name:'凡兵大成',   desc:'集齐并升满 60 件 R 武器', points:10 },
   { id:'all_sr_max',   name:'银辉集大成', desc:'集齐并升满 30 件 SR 武器', points:10 },
@@ -1061,6 +1083,8 @@ let state = {
   taRate: 0,             // TA 率（连续攻击 3 次）
   petrifiedTurns: 0,     // 石化剩余回合（美杜莎凝视）
   sealTurns: 0,          // 封印剩余回合（玛裘拉冰星法杖）
+  collectibles: {},      // 收藏品拥有状态
+  killCounter: 0,        // 创树的年轮：累计击杀（含 Boss），满 50 触发保底
   viewIslandId: '',      // 岛屿窗口中「浏览中」的岛（不影响实际挂机目标）
   bowRapid: false,       // 游侠奥义：本场连射改为每 2 次 40%
   fistCapUp: false,      // 格斗家奥义：本场斗气上限 45%
@@ -1185,6 +1209,18 @@ function weaponBonus(def) {
   const hasNezhaN = !!state.weapons['nezha_spear'];
   const hasNezhaSq = !!state.weapons['nezha_ancient'];
   const nezhaRound = (state.dungeonFight && state.dungeonFight.round) || (state.monster && state.monster.round) || 0;
+  // 暗属性暴君（奥莉薇尔武器）：独立乘区，不与攻刃加算；多把相乘
+  let darkTyrantAtk = 1, darkTyrantHp = 1;
+  if (def.attr === '暗') {
+    for (const w of OVL_WEAPONS) {
+      if (!state.weapons[w.id]) continue;
+      for (const sk of w.skills) {
+        if (sk.kind !== 'tyrant' || sk.target !== '暗') continue;
+        darkTyrantAtk *= (1 + sk.atk);
+        darkTyrantHp *= (1 - (sk.hpDown || 0));
+      }
+    }
+  }
   const ms = magnaSkillBonusOf(def.attr);
   sqAtk += ms.sqAtk; sqHp += ms.sqHp; sqBw += ms.sqBw;
   nmAtk += ms.nmAtk; nmHp += ms.nmHp; nmBw += ms.nmBw;
@@ -1206,6 +1242,18 @@ function weaponBonus(def) {
   // 暴君负面：跨层加算（两把 → ×0.8），仅作用于风属性武器
   const tyrantDown = def.attr === '风' ? ((hasNezhaN ? 0.10 : 0) + (hasNezhaSq ? 0.10 : 0)) : 0;
   if (tyrantDown > 0) hp *= (1 - tyrantDown);
+  // 暴君：独立乘区（攻 ×1.15 每把、命 ×0.9 每把）
+  atk *= darkTyrantAtk;
+  hp *= darkTyrantHp;
+  // 光的背水：独立曲线（多把相乘，曲线与火背水一致）
+  if (def.attr === '光') {
+    let lbwN = 0;
+    for (const w of APOLLO_WEAPONS) {
+      if (!state.weapons[w.id]) continue;
+      for (const sk of w.skills) if (sk.kind === 'lightBw') lbwN++;
+    }
+    if (lbwN > 0) atk *= Math.pow(1 + lightBackwaterCurve(), lbwN);
+  }
   // 火的背水：独立曲线（多把相乘）
   if (def.attr === '火') {
     let fbwN = 0;
@@ -1533,6 +1581,57 @@ const SEA_WEAPONS = [
 SEA_WEAPONS.forEach(w => { WEAPON_BY_ID[w.id] = w; });
 ALL_MAGNA_SSR = ALL_MAGNA_SSR.concat(SEA_WEAPONS);
 
+// ===== 收藏品：6 座属性岛各 1 件（未获得显示 ???）=====
+// ===== 星晶兽 · 阿波罗（光之岛第 6 关）=====
+const APOLLO_BOSS = { name: '阿波罗', attr: '光', hp: 2800000, atk: 17500, chariotHp: 0.5, chariotTurns: 3, roadHp: 0.1 };
+const APOLLO_WEAPONS = [
+  { id: 'apollo_bow', type: '弓', name: '阿尔忒弥斯', rarity: 'SSR', atk: 180, hp: 420, attr: '光', maxLevel: 100, skills: [
+      { name: '天光的攻刃-1', target: '光', stat: 'atk' },
+      { name: '光的背水-1', kind: 'lightBw', target: '光' },
+    ] },
+  { id: 'apollo_ancient', type: '弓', name: '远古·阿尔忒弥斯', rarity: 'SSR', atk: 180, hp: 420, attr: '光', maxLevel: 100, skills: [
+      { name: '骑解方阵·攻刃III-1', target: '光', stat: 'atk' },
+      { name: '骑解方阵·背水-1', kind: 'lightBw', target: '光' },
+    ] },
+];
+APOLLO_WEAPONS.forEach(w => { WEAPON_BY_ID[w.id] = w; });
+// 并入玛格纳 SSR 技能汇总，否则「攻刃 +15%」不参与属性计算
+ALL_MAGNA_SSR = ALL_MAGNA_SSR.concat(APOLLO_WEAPONS);
+// 光的背水曲线（与火的背水一致）
+function lightBackwaterCurve() {
+  const max = (statsCache && statsCache.hp) || 1;
+  const r = Math.max(0, Math.min(1, state.playerHp / max));
+  const x = 1 - r;
+  return 0.06 * x + 0.12 * x * x;
+}
+
+// ===== 星晶兽 · D天使·奥莉薇尔（暗之岛第 6 关）=====
+const OVL_BOSS = { name: 'D天使·奥莉薇尔', attr: '暗', hp: 2500000, atk: 15000, condemnHp: 0.5, condemnTurns: 3, darkSwordHp: 0.1 };
+const OVL_WEAPONS = [
+  { id: 'ovl_dagger', type: '匕首', name: '卡提纳', rarity: 'SSR', atk: 150, hp: 450, attr: '暗', maxLevel: 100, skills: [
+      { name: '奈落的暴君-1', kind: 'tyrant', target: '暗', atk: 0.15, hpDown: 0.10 },
+      { name: '奈落的三手-1', kind: 'sanjin', target: '暗', da: 0.05, ta: 0.05 },
+    ] },
+  { id: 'ovl_ancient', type: '匕首', name: '远古·卡提纳', rarity: 'SSR', atk: 150, hp: 450, attr: '暗', maxLevel: 100, skills: [
+      { name: '黑雾方阵·暴君-1', kind: 'tyrant', target: '暗', atk: 0.15, hpDown: 0.10 },
+      { name: '黑雾方阵三手III-1', kind: 'sanjin', target: '暗', da: 0.05, ta: 0.05 },
+    ] },
+];
+OVL_WEAPONS.forEach(w => { WEAPON_BY_ID[w.id] = w; });
+ALL_MAGNA_SSR = ALL_MAGNA_SSR.concat(OVL_WEAPONS);
+
+const ISLAND_COLLECTIBLES = [
+  { id: 'col_wind',  island: 'wind',  name: '岚龙的遗珠', desc: '掉落判定失败时，10% 概率重摇一次' },
+  { id: 'col_earth', island: 'earth', name: '创树的年轮', desc: '每击杀 50 只怪，额外触发 1 次武器掉落' },
+  { id: 'col_sea',   island: 'sea',   name: '海神的泪滴', desc: '所有商店兑换价格 -10%' },
+  { id: 'col_sun',   island: 'sun',   name: '日珥的余温', desc: '制作 / 兑换 / 强化消耗的材料，5% 概率全额返还' },
+  { id: 'col_light', island: 'light', name: '晨曦的碎片', desc: '满级武器重复转化的收藏点 +50%' },
+  { id: 'col_dark',  island: 'dark',  name: '黑雾的残响', desc: '自动扫荡 / 自动挑战冷却 -10%' },
+];
+const COLLECTIBLE_BY_ID = {};
+ISLAND_COLLECTIBLES.forEach(c => { COLLECTIBLE_BY_ID[c.id] = c; });
+const COLLECTIBLE_RATE = 0.0001; // 0.01% 独立掉率，不吃任何加成
+
 // ===== 星晶兽 · 烈焰·琉璃（火之岛第 6 关）=====
 const SUN_BOSS = {
   name: '烈焰·琉璃', attr: '火', hp: 2500000, atk: 18500,
@@ -1628,6 +1727,34 @@ function handleStarBeast(id) {
       spawnMonster();
       log('⚡ 挑战星晶兽 · <b>烈焰·琉璃</b>（火属性 · 2,500,000 生命）', 'area');
       toast('⚡ 烈焰·琉璃 登场！');
+      renderMap();
+      updateAll();
+      save(true);
+      return;
+    }
+    if (id === 'light') {
+      state.islandId = 'light';
+      state.viewIslandId = '';
+      state.islandIdx = 6;
+      state.inMap = true;
+      state.playerHp = playerMaxHp();
+      spawnMonster();
+      log('⚡ 挑战星晶兽 · <b>阿波罗</b>（光属性 · 5,000,000 生命）', 'area');
+      toast('⚡ 阿波罗 登场！');
+      renderMap();
+      updateAll();
+      save(true);
+      return;
+    }
+    if (id === 'dark') {
+      state.islandId = 'dark';
+      state.viewIslandId = '';
+      state.islandIdx = 6;
+      state.inMap = true;
+      state.playerHp = playerMaxHp();
+      spawnMonster();
+      log('⚡ 挑战星晶兽 · <b>D天使·奥莉薇尔</b>（暗属性 · 2,500,000 生命）', 'area');
+      toast('⚡ D天使·奥莉薇尔 登场！');
       renderMap();
       updateAll();
       save(true);
@@ -1735,9 +1862,14 @@ function unlockJob(id) {
   unlockAchievement('job_first_unlock');
   renderJobs(); updateAll(); save(true);
 }
+// 战斗中锁定职业切换（副本 / RANK / 星晶兽）
+function jobSwitchLocked() {
+  return !!(state.dungeonFight || state.rankFight || (state.monster && state.monster.starBeast));
+}
 // 切换职业
 function selectJob(id) {
   if (!state.jobs[id]) return;
+  if (jobSwitchLocked()) { toast('战斗中无法切换职业'); return; }
   state.currentJob = id;
   log(`🏅 切换职业：<b>${JOB_BY_ID[id].name}</b>`, 'area');
   renderJobs(); updateAll(); save(true);
@@ -1947,6 +2079,20 @@ function spawnMonster() {
     playerGauge = 0;
     return;
   }
+  // 星晶兽关卡（光之岛第 6 关）：阿波罗常驻战斗
+  if (state.islandIdx === 6 && state.islandId === 'light') {
+    const b = APOLLO_BOSS;
+    state.monster = { name: b.name, attr: b.attr, atk: b.atk, hp: b.hp, maxHp: b.hp, gauge: 0, round: 0, starBeast: true, apollo: true, da: 0, ta: 0, chariotUsed: false, chariotTurns: 0, roadUsed: false };
+    playerGauge = 0;
+    return;
+  }
+  // 星晶兽关卡（暗之岛第 6 关）：D天使·奥莉薇尔常驻战斗
+  if (state.islandIdx === 6 && state.islandId === 'dark') {
+    const b = OVL_BOSS;
+    state.monster = { name: b.name, attr: b.attr, atk: b.atk, hp: b.hp, maxHp: b.hp, gauge: 0, round: 0, starBeast: true, ovl: true, da: 0, ta: 0, condemnUsed: false, darkSwordUsed: false };
+    playerGauge = 0;
+    return;
+  }
   if (state.islandIdx > 0) {
     const cfg = islandCfg();
     const stage = state.islandIdx;
@@ -2031,6 +2177,16 @@ function rollWeapon() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 // 返回 { type: 'new'|'up'|'max', def, level, points? }
+// 日珥的余温（火之岛收藏品）：制作 / 兑换 / 强化消耗材料后，5% 概率全额返还
+function maybeRefundSun(costs) {
+  if (!state.collectibles.col_sun) return false;
+  if (Math.random() >= 0.05) return false;
+  for (const k in costs) state[k] = (state[k] || 0) + costs[k];
+  toast('🔥 日珥的余温：材料全额返还！', { skill: true });
+  log('🔥 日珥的余温发动：本次消耗的材料已全额返还', 'drop');
+  return true;
+}
+
 function addWeapon(def) {
   invalidateStats();
   weaponDirty = true;
@@ -2043,9 +2199,13 @@ function addWeapon(def) {
     } else {
       // 玛格纳 SSR（提亚马特 / 尤格 / 利维坦 / 科罗萨斯 / 修瓦利耶 / 塞勒斯特）满级重复 → 300 收藏点
       const isMagnaSsr = /^(magna_|ygg_magna_|levi_magna_|colo_magna_|chiv_magna_|cel_magna_)/.test(def.id);
+      // 星晶兽专属 SSR（哪吒 / 美杜莎 / 玛裘拉 / 烈焰·琉璃）满级重复 → 800 收藏点
+      const isStarBeastSsr = /^(nezha_|medusa_|sea_|sun_)/.test(def.id);
       // Boss 专属 SR（提亚马特/尤格/利维坦/科罗萨斯/修瓦利耶/塞勒斯特）满级重复 → 30 收藏点
       const isBossSr = /^(tiamat|ygg|levi|colo|chiv|celeste)_/.test(def.id);
-      const p = isMagnaSsr ? 300 : isBossSr ? 30 : (RARITY_POINTS[def.rarity] || 1);
+      let p = isStarBeastSsr ? 800 : isMagnaSsr ? 300 : isBossSr ? 30 : (RARITY_POINTS[def.rarity] || 1);
+      // 晨曦的碎片（光之岛收藏品）：满级重复转化的收藏点 +50%
+      if (state.collectibles.col_light) p = Math.round(p * 1.5);
       state.points += p;
       state.everHadPoints = true;
       return { type:'max', def, level: MAX_LEVEL, points: p };
@@ -2116,6 +2276,9 @@ function expertIslandBonus() {
 }
 function playerAttackOnce() {
   if (state.sealTurns > 0) state.sealTurns--;
+  // 谴责的减益回合递减
+  if (state.daDebuffTurns > 0) state.daDebuffTurns--;
+  if (state.defDownTurns > 0) state.defDownTurns--;
   // 石化：无法攻击，消耗 1 回合
   if (state.petrifiedTurns > 0) {
     state.petrifiedTurns--;
@@ -2207,9 +2370,15 @@ function monsterAttackOnce() {
   // 枪兵奥义：被克制时受到伤害 ×2/3（四元素 150%→100%，光暗 100%→66.6%）
   if (state.pierceTurns > 0 && isCountered(playerAttr(), state.monster.attr)) mdmgIn *= 2 / 3;
   // 训练木桩：固定造成玩家最大生命 1% 的伤害（不受减伤/克制影响）
+  // 怪物 DA / TA：所有 Boss 初始 0%，仅特殊阶段提升；先判 TA（3 段），失败再判 DA（2 段）
+  const mDa = Math.max(0, state.monster.da || 0);
+  const mTa = Math.max(0, state.monster.ta || 0);
+  let mSegs = 1;
+  if (mTa > 0 && Math.random() < mTa) mSegs = 3;
+  else if (mDa > 0 && Math.random() < mDa) mSegs = 2;
   let mdmg = state.dummyMode
     ? playerMaxHp() * 0.01
-    : state.monster.atk * mdmgIn * rand(0.9, 1.1) * jobDefMul({ firstHit: state.monster.round === 1, weak: isCountered(playerAttr(), state.monster.attr) }) * expertIslandBonus().def;
+    : state.monster.atk * mdmgIn * rand(0.9, 1.1) * jobDefMul({ firstHit: state.monster.round === 1, weak: isCountered(playerAttr(), state.monster.attr) }) * expertIslandBonus().def * mSegs;
   if (state.pierceTurns > 0) state.pierceTurns--;
   // 星晶兽 · 哪吒：火焰长枪火属性追伤（通用减伤同样生效；枪兵贯穿不影响火伤）
   if (state.monster.starBeast && state.monster.fireLance !== undefined && (state.monster.fireLance || 0) > 0) {
@@ -2277,6 +2446,58 @@ function monsterAttackOnce() {
       showBossPhaseEffect('❄ 冷焰');
     }
   }
+  // 星晶兽 · 阿波罗阶段：≤50% 地狱战车（DA/TA +25%，3 回合）；≤10% 赫利俄斯大道（DA +25%、攻击 +20%，永久）
+  if (state.monster.apollo) {
+    const ar = state.monster.hp / state.monster.maxHp;
+    if (ar <= 0.5 && !state.monster.chariotUsed) {
+      state.monster.chariotUsed = true;
+      state.monster.chariotTurns = APOLLO_BOSS.chariotTurns;
+      state.monster.da = Math.max(state.monster.da || 0, 0.25);
+      state.monster.ta = Math.max(state.monster.ta || 0, 0.25);
+      log('🏇 阿波罗发动「地狱战车」：自身 DA / TA +25%，持续 3 回合', 'death');
+      toast('🏇 地狱战车！', { skill: true });
+      showBossPhaseEffect('🏇 地狱战车');
+    }
+    if (state.monster.chariotTurns > 0) {
+      state.monster.chariotTurns--;
+      if (state.monster.chariotTurns === 0) {
+        state.monster.ta = 0;
+        state.monster.da = state.monster.roadUsed ? 0.25 : 0;
+      }
+    }
+    if (ar <= 0.1 && !state.monster.roadUsed) {
+      state.monster.roadUsed = true;
+      state.monster.da = Math.max(state.monster.da || 0, 0.25);
+      state.monster.atk = Math.round(state.monster.atk * 1.2);
+      log('🌞 阿波罗发动「赫利俄斯大道」：直到战斗结束，DA +25%、攻击 +20%', 'death');
+      toast('🌞 赫利俄斯大道！', { skill: true });
+      showBossPhaseEffect('🌞 赫利俄斯大道');
+    }
+  }
+  // 星晶兽 · D天使·奥莉薇尔阶段
+  if (state.monster.ovl) {
+    const vr = state.monster.hp / state.monster.maxHp;
+    if (vr <= 0.5 && !state.monster.condemnUsed) {
+      state.monster.condemnUsed = true;
+      state.daDebuff = 0.25;
+      state.daDebuffTurns = 3;
+      state.defDownTurns = 3;
+      log('⚖ 奥莉薇尔发动「谴责」：你的 DA 率 -25%、防御下降 10%，持续 3 回合', 'death');
+      toast('⚖ 谴责！', { skill: true });
+      showPlayerPhaseEffect('⚖ 谴责');
+    }
+    if (vr <= 0.1 && !state.monster.darkSwordUsed) {
+      state.monster.darkSwordUsed = true;
+      const dd = Math.round(state.monster.atk * 2.0 * attrModifier(playerAttr(), '暗').in);
+      state.playerHp -= dd;
+      state.sealTurns = 1;
+      log(`🗡 奥莉薇尔发动「黑暗堕落之剑」：受到 ${fmt(dd)} 暗属性伤害，并被封印 1 回合`, 'death');
+      toast('🗡 黑暗堕落之剑！', { skill: true });
+      showPlayerPhaseEffect('❄ 封印 1 回合');
+    }
+  }
+  // 防御下降（谴责）：受到伤害 ×1/(1-10%)
+  if ((state.defDownTurns || 0) > 0) mdmg *= 1 / 0.9;
   // 石化：受到的伤害变为 90%
   if (state.petrifiedTurns > 0) mdmg *= 0.9;
   let mdmgFinal = mdmg;
@@ -2585,6 +2806,10 @@ function bossLabel(b) {
 
 function onDungeonWin() {
   const boss = state.dungeonFight;
+  // 创树的年轮：仅对该 Boss 本身会掉武器的战斗计数（佐伊 / 天司等不掉武器的不生效）
+  if (state.collectibles.col_earth && /^(tiamat|yggdrasil|leviathan|colossus|chivalier|celeste)$/.test(boss.id)) {
+    state.killCounter = (state.killCounter || 0) + 1;
+  }
   // 通关通知：战斗页总开关或该 Boss 单独关闭时静音（奖励照常发放）
   suppressBossMsgs = !!state.hideBossReward || !!(state.hiddenBossMsgs && state.hiddenBossMsgs[boss.id]);
   const firstClear = !state.dungeonCleared;
@@ -2604,7 +2829,9 @@ function onDungeonWin() {
   else if (boss.hard && boss.id === 'chivalier') state.chivHardKills = (state.chivHardKills || 0) + 1;
   else if (boss.hard && boss.id === 'celeste') state.celesteHardKills = (state.celesteHardKills || 0) + 1;
   else state.bossKills[boss.id] = (state.bossKills[boss.id] || 0) + 1;
-  state.bossCooldowns[boss.id] = Date.now() + 30000; // 该 Boss 独立 30 秒冷却
+  // 黑雾的残响（暗之岛收藏品）：自动扫荡 / 自动挑战冷却 -10%
+  const cdMul = state.collectibles.col_dark ? 0.9 : 1;
+  state.bossCooldowns[boss.id] = Date.now() + Math.round(30000 * cdMul); // 该 Boss 独立冷却
   if (boss.id === 'tiamat') {
     state.tiamatCleared = true; // 解锁土之岛
     if (boss.hard) {
@@ -3133,25 +3360,32 @@ function onMonsterKilled() {
   // 星晶兽 · 哪吒：持续刷新战斗，不推进岛屿进度
   if (state.monster && state.monster.starBeast) {
     state.kills++;
+    if (state.collectibles.col_earth) state.killCounter = (state.killCounter || 0) + 1;
     const nBoost = (1 + achievementPoints() * ACH_POINTS_PER) * totalDropMul();
     const isSun = !!state.monster.liuli;
     const isSea = !!state.monster.mermaid;
     const isMedusa = !!state.monster.medusa;
-    const dropList = isSun ? SUN_WEAPONS : (isSea ? SEA_WEAPONS : (isMedusa ? MEDUSA_WEAPONS : NEZHA_WEAPONS));
-    const bossName = isSun ? '烈焰·琉璃' : (isSea ? '玛裘拉' : (isMedusa ? '美杜莎' : '哪吒'));
-    const matKey = isSun ? 'sunCore' : (isSea ? 'seaFan' : (isMedusa ? 'earthBud' : 'amberEyes'));
-    const matIsland = isSun ? 'sun' : (isSea ? 'sea' : (isMedusa ? 'earth' : 'wind'));
-    const matName = isSun ? '日珥反应炉' : (isSea ? '海神的扇尾' : (isMedusa ? '创树的花蕾' : '岚龙的琥珀眼'));
+    const isApollo = !!state.monster.apollo;
+    const isOvl = !!state.monster.ovl;
+    const dropList = isOvl ? OVL_WEAPONS : (isApollo ? APOLLO_WEAPONS : (isSun ? SUN_WEAPONS : (isSea ? SEA_WEAPONS : (isMedusa ? MEDUSA_WEAPONS : NEZHA_WEAPONS))));
+    const bossName = isOvl ? 'D天使·奥莉薇尔' : (isApollo ? '阿波罗' : (isSun ? '烈焰·琉璃' : (isSea ? '玛裘拉' : (isMedusa ? '美杜莎' : '哪吒'))));
+    const matKey = isOvl ? 'darkShard' : (isApollo ? 'starPlankton' : (isSun ? 'sunCore' : (isSea ? 'seaFan' : (isMedusa ? 'earthBud' : 'amberEyes'))));
+    const matIsland = isOvl ? 'dark' : (isApollo ? 'light' : (isSun ? 'sun' : (isSea ? 'sea' : (isMedusa ? 'earth' : 'wind'))));
+    const matName = isOvl ? '黑雾的结晶' : (isApollo ? '星星浮游体' : (isSun ? '日珥反应炉' : (isSea ? '海神的扇尾' : (isMedusa ? '创树的花蕾' : '岚龙的琥珀眼'))));
     dropList.forEach(w => {
       const cnt = rollDropCount(0.0004 * nBoost);
       for (let i = 0; i < cnt; i++) {
         const res = addWeapon(w);
+        // 「隐藏收藏点日志」开启时，满级转化不写日志、不弹飘字
+        if (res.type === 'max' && state.hidePointLog) continue;
         const msg = res.type === 'new' ? '获得 Lv.1' : (res.type === 'up' ? '升级至 Lv.' + res.level : '已满级，转化为 ' + res.points + ' 收藏点');
         log(`⚡ 击败${bossName}，掉落 <span class="ssr">[SSR] ${w.name}</span>（${msg}）`, 'up');
         toast(`⚡ 获得 [SSR] ${w.name}！${msg}`);
       }
     });
-    if (isSun) state.starBeasts.sunKills = (state.starBeasts.sunKills || 0) + 1;
+    if (isOvl) state.starBeasts.ovlKills = (state.starBeasts.ovlKills || 0) + 1;
+    else if (isApollo) state.starBeasts.apolloKills = (state.starBeasts.apolloKills || 0) + 1;
+    else if (isSun) state.starBeasts.sunKills = (state.starBeasts.sunKills || 0) + 1;
     else if (isSea) state.starBeasts.seaKills = (state.starBeasts.seaKills || 0) + 1;
     else if (isMedusa) state.starBeasts.medusaKills = (state.starBeasts.medusaKills || 0) + 1;
     else state.starBeasts.nezhaKills = (state.starBeasts.nezhaKills || 0) + 1;
@@ -3179,11 +3413,13 @@ function onMonsterKilled() {
       log(`⚡ 击败${bossName}，获得 <span class="drop">${matName} ×${matCnt}</span>（当前 ${fmt(state[matKey])}）`, 'drop');
     }
     // 成就解锁放在奖励结算之后，保证星晶兽之间的金币/经验口径一致
-    if (isSun) unlockAchievement('sun_first');
+    if (isOvl) unlockAchievement('ovl_first');
+    else if (isApollo) unlockAchievement('apollo_first');
+    else if (isSun) unlockAchievement('sun_first');
     else if (isSea) unlockAchievement('sea_first');
     else if (isMedusa) unlockAchievement('medusa_first');
     else unlockAchievement('nezha_first');
-    log(`⚡ 击败哪吒：经验 +${fmt(expValue)}，金币 +${fmt(goldActual)}`, 'up');
+    log(`⚡ 击败${bossName}：经验 +${fmt(expValue)}，金币 +${fmt(goldActual)}`, 'up');
     state.playerHp = playerMaxHp();
     spawnMonster();
     updateHud();
@@ -3268,7 +3504,20 @@ function onMonsterKilled() {
   const effRate = effectiveDropRate(state.islandIdx > 0 ? 90 : state.currentIdx);
   const whole = Math.floor(effRate);           // 必定掉落件数
   const frac = effRate - whole;                // 余数概率再掉 1 件
-  const drops = whole + (Math.random() < frac ? 1 : 0);
+  let drops = whole + (Math.random() < frac ? 1 : 0);
+  // 岚龙的遗珠：本次判定失败时，10% 概率重摇一次（只重摇一次，不会连锁）
+  if (drops === 0 && state.collectibles.col_wind && Math.random() < 0.10) {
+    drops = whole + (Math.random() < frac ? 1 : 0);
+  }
+  // 创树的年轮：每 50 只击杀（含 Boss）保底额外 1 件【武器】，只影响武器掉落、不计入材料掉落
+  if (state.collectibles.col_earth && effRate > 0) {
+    state.killCounter = (state.killCounter || 0) + 1;
+    if (state.killCounter >= 50) {
+      state.killCounter = 0;
+      drops += 1;
+      log('🌱 创树的年轮：50 次击杀保底，额外掉落 1 件武器（不含材料）', 'drop');
+    }
+  }
 
   const expCfgNow = state.islandIdx > 0 ? islandCfg().expert : null;
   const expertType = expCfgNow ? expCfgNow.type : null;
@@ -3387,6 +3636,17 @@ function onMonsterKilled() {
       if (matCount > 0) {
         state[cfg.materialKey] = (state[cfg.materialKey] || 0) + matCount;
         log(`击败 <b>${state.monster.name}</b>，掉落 <span class="drop">${cfg.material} ×${matCount}</span>`, 'drop');
+      }
+      // 收藏品：元素岛 1-5 关独立 0.01%（不吃任何加成）
+      if (state.islandId && state.islandIdx >= 1 && state.islandIdx <= 5) {
+        const col = ISLAND_COLLECTIBLES.find(c => c.island === state.islandId);
+        if (col && !state.collectibles[col.id] && Math.random() < COLLECTIBLE_RATE) {
+          state.collectibles[col.id] = true;
+          unlockAchievement('colget_' + col.id);
+          log(`🏺 获得收藏品「<b>${col.name}</b>」！${col.desc}`, 'drop');
+          toast(`🏺 收藏品：${col.name}`);
+          renderCollectibles();
+        }
       }
     }
   }
@@ -3729,6 +3989,7 @@ function renderStats() {
     sqAtk += ms.sqAtk; sqHp += ms.sqHp; sqBw += ms.sqBw;
     // 神威 / 刹那：按层拆分，用于攻击行展示
     let mightSqAtk = 0, mightNmAtk = 0, mightSqHp = 0, mightNmHp = 0, setsunaSqAtk = 0, setsunaNmAtk = 0;
+    let fireSetsunaSqAtk = 0, fireSetsunaNmAtk = 0;
     for (const mw of ALL_MAGNA_SSR) {
       if (!state.weapons[mw.id]) continue;
       for (const s of mw.skills) {
@@ -3739,6 +4000,7 @@ function renderStats() {
           else { mightNmAtk += s.atk; mightNmHp += s.hp; }
         }
         else if (s.kind === 'setsuna') { if (sq) setsunaSqAtk += s.atk; else setsunaNmAtk += s.atk; }
+        else if (s.kind === 'fireSetsuna') { if (sq) fireSetsunaSqAtk += s.atk; else fireSetsunaNmAtk += s.atk; }
       }
     }
     let nmAtk = ms.nmAtk, nmHp = ms.nmHp, nmBw = ms.nmBw;
@@ -3761,17 +4023,45 @@ function renderStats() {
         }
       }
     }
-    let fireBwCount = 0;
+    let fireBwSq = 0, fireBwNm = 0;
     if (attr === '火') {
       for (const w of SUN_WEAPONS) {
         if (!state.weapons[w.id]) continue;
-        for (const sk of w.skills) if (sk.kind === 'fireBw') fireBwCount++;
+        for (const sk of w.skills) {
+          if (sk.kind !== 'fireBw') continue;
+          if (/方阵/.test(sk.name)) fireBwSq++; else fireBwNm++;
+        }
       }
     }
+    const fireBwCount = fireBwSq + fireBwNm;
     const fireBwMul = fireBwCount > 0 ? Math.pow(1 + fireBackwaterCurve(), fireBwCount) : 1;
+    let lightBwSq = 0, lightBwNm = 0;
+    if (attr === '光') {
+      for (const w of APOLLO_WEAPONS) {
+        if (!state.weapons[w.id]) continue;
+        for (const sk of w.skills) {
+          if (sk.kind !== 'lightBw') continue;
+          if (/方阵/.test(sk.name)) lightBwSq++; else lightBwNm++;
+        }
+      }
+    }
+    const lightBwCount = lightBwSq + lightBwNm;
+    const lightBwMul = lightBwCount > 0 ? Math.pow(1 + lightBackwaterCurve(), lightBwCount) : 1;
+    // 暗属性暴君（奥莉薇尔武器）：独立乘区，多把相乘
+    let darkTyrantAtkMul = 1, darkTyrantHpMul = 1;
+    if (attr === '暗') {
+      for (const w of OVL_WEAPONS) {
+        if (!state.weapons[w.id]) continue;
+        for (const sk of w.skills) {
+          if (sk.kind !== 'tyrant' || sk.target !== '暗') continue;
+          darkTyrantAtkMul *= (1 + sk.atk);
+          darkTyrantHpMul *= (1 - (sk.hpDown || 0));
+        }
+      }
+    }
     const atkMul = (1 + sqAtk) * (1 + sqTyrantPct / 100) * (1 + sqSongPct / 100) * (1 + bw * sqBw)
-      * (1 + nmAtk) * (1 + nmTyrantPct / 100) * (1 + nmSongPct / 100) * (1 + bw * nmBw) * fireBwMul;
-    const hpMul = (1 + sqHp) * (1 + nmHp) * (1 - nezhaHpDown);
+      * (1 + nmAtk) * (1 + nmTyrantPct / 100) * (1 + nmSongPct / 100) * (1 + bw * nmBw) * fireBwMul * lightBwMul * darkTyrantAtkMul;
+    const hpMul = (1 + sqHp) * (1 + nmHp) * (1 - nezhaHpDown) * darkTyrantHpMul;
     const grp = { atk: [], hp: [], sp: [] };
     const addSrc = (text, g) => grp[g].push(text);
     // 原生方阵武器
@@ -3806,8 +4096,8 @@ function renderStats() {
     html += `<div class="stat-card">
       <div class="stat-name">${icon} ${attr}属性武器</div>
       <div class="stat-sec">攻击 <b>×${atkMul.toFixed(3)}</b>（+${fmtPct(atkMul - 1)}%）</div>
-      <div class="stat-layer">方阵：攻刃 ×${(1 + sqAtk - mightSqAtk - setsunaSqAtk).toFixed(2)}${mightSqAtk ? ` · 神威 ×${(1 + mightSqAtk).toFixed(2)}` : ''}${setsunaSqAtk ? ` · 罗刹 ×${(1 + setsunaSqAtk).toFixed(2)}` : ''}${hasNezhaSq ? ` · 暴君 ×${(1 + sqTyrantPct / 100).toFixed(2)}` : ''}${sqSongPct > 0 ? ` · 楚歌 ×${(1 + sqSongPct / 100).toFixed(2)}` : ''}${sqBw ? ` · 背水 ×${sqBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}</div>
-      <div class="stat-layer">普通：攻刃 ×${(1 + nmAtk - mightNmAtk - setsunaNmAtk).toFixed(2)}${mightNmAtk ? ` · 神威 ×${(1 + mightNmAtk).toFixed(2)}` : ''}${setsunaNmAtk ? ` · 罗刹 ×${(1 + setsunaNmAtk).toFixed(2)}` : ''}${hasNezhaN ? ` · 暴君 ×${(1 + nmTyrantPct / 100).toFixed(2)}` : ''}${nmSongPct > 0 ? ` · 楚歌 ×${(1 + nmSongPct / 100).toFixed(2)}` : ''}${nmBw ? ` · 背水 ×${nmBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}${fireBwCount ? ` · 背水 ×${fireBwCount}（当前 +${(fireBackwaterCurve() * 100).toFixed(2)}%）` : ''}</div>
+      <div class="stat-layer">方阵：攻刃 ×${(1 + sqAtk - mightSqAtk - setsunaSqAtk - fireSetsunaSqAtk).toFixed(2)}${mightSqAtk ? ` · 神威 ×${(1 + mightSqAtk).toFixed(2)}` : ''}${setsunaSqAtk ? ` · 罗刹 ×${(1 + setsunaSqAtk).toFixed(2)}` : ''}${hasNezhaSq ? ` · 暴君 ×${(1 + sqTyrantPct / 100).toFixed(2)}` : ''}${sqSongPct > 0 ? ` · 楚歌 ×${(1 + sqSongPct / 100).toFixed(2)}` : ''}${sqBw ? ` · 背水 ×${sqBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}${fireBwSq ? ` · 背水 ×${fireBwSq}（当前 +${(fireBackwaterCurve() * 100).toFixed(2)}%）` : ''}${lightBwSq ? ` · 背水 ×${lightBwSq}（当前 +${(lightBackwaterCurve() * 100).toFixed(2)}%）` : ''}${fireSetsunaSqAtk ? ` · 刹那 ×${(1 + fireSetsunaSqAtk).toFixed(2)}` : ''}</div>
+      <div class="stat-layer">普通：攻刃 ×${(1 + nmAtk - mightNmAtk - setsunaNmAtk - fireSetsunaNmAtk).toFixed(2)}${mightNmAtk ? ` · 神威 ×${(1 + mightNmAtk).toFixed(2)}` : ''}${setsunaNmAtk ? ` · 罗刹 ×${(1 + setsunaNmAtk).toFixed(2)}` : ''}${hasNezhaN ? ` · 暴君 ×${(1 + nmTyrantPct / 100).toFixed(2)}` : ''}${nmSongPct > 0 ? ` · 楚歌 ×${(1 + nmSongPct / 100).toFixed(2)}` : ''}${nmBw ? ` · 背水 ×${nmBw}（当前 +${(bw * 100).toFixed(1)}%）` : ''}${fireBwNm ? ` · 背水 ×${fireBwNm}（当前 +${(fireBackwaterCurve() * 100).toFixed(2)}%）` : ''}${lightBwNm ? ` · 背水 ×${lightBwNm}（当前 +${(lightBackwaterCurve() * 100).toFixed(2)}%）` : ''}${fireSetsunaNmAtk ? ` · 刹那 ×${(1 + fireSetsunaNmAtk).toFixed(2)}` : ''}</div>
       <div class="stat-layer">DA 率 ${daModifierOf(attr) > 0 ? '+' : ''}${(daModifierOf(attr) * 100).toFixed(0)}% · TA 率 ${taModifierOf(attr) > 0 ? '+' : ''}${(taModifierOf(attr) * 100).toFixed(0)}%</div>
       <div class="stat-sec">生命 <b>×${hpMul.toFixed(3)}</b>（${hpMul >= 1 ? '+' : ''}${fmtPct(hpMul - 1)}%）</div>
       <div class="stat-layer">方阵：守护 ×${(1 + sqHp - mightSqHp).toFixed(2)}${mightSqHp ? ` · 神威 ×${(1 + mightSqHp).toFixed(2)}` : ''}</div>
@@ -3922,7 +4212,7 @@ function renderJobs() {
       <div class="job-owgi">⚡ 奥义「${OWGI_INFO[j.id] ? OWGI_INFO[j.id].name : '—'}」：${OWGI_INFO[j.id] ? OWGI_INFO[j.id].desc : ''}</div>
       ${st && level < JOB_MAX ? `<div class="job-expbar"><div class="job-expfill" style="transform:scaleX(${Math.min(1, (st.pool || 0) / JOB_EXP_VALUE)})"></div></div><div class="job-exp-tip">经验值转换 ${(((st.pool || 0) / JOB_EXP_VALUE) * 100).toFixed(1)}%（满 100% 转 1 点职业经验）</div>` : ''}
       <div class="job-actions">${st
-        ? (active ? '<button class="gold" disabled>当前职业</button>' : `<button class="gold" data-job-select="${j.id}">切换</button>`)
+        ? (active ? '<button class="gold" disabled>当前职业</button>' : `<button class="gold" data-job-select="${j.id}" ${jobSwitchLocked() ? 'disabled title="战斗中无法切换"' : ''}>切换</button>`)
         : `<button class="gold" data-job-unlock="${j.id}" ${certs >= 1 ? '' : 'disabled'}>解锁</button>`}</div>
     </div>`;
   }
@@ -3940,6 +4230,7 @@ function renderPanels(force) {
   // 重面板：只在数据变化时重建（避免后期每秒重建上百张卡）
   if (force || armoryDirty) { renderArmory(); updateChapterGlow(); armoryDirty = false; }
   if (force || achDirty) { renderAchievements(); achDirty = false; }
+  renderCollectibles();
   // 轻面板：每次重建（开销小）
   renderShop();
   renderDungeon();
@@ -4066,7 +4357,21 @@ function renderShop() {
         <button class="gold shop-buy" ${buyable ? '' : 'disabled'}>兑换 · ${cost.toLocaleString()}</button>
       </div>`;
 
-  list.innerHTML = fateItem + goldItem + dropItem;
+  // 六岛收藏品兑换（随机给未获得的一件；首次 100 万，之后每件 +100 万）
+  const remainCols = ISLAND_COLLECTIBLES.filter(c => !state.collectibles[c.id]);
+  const colPrice = (ISLAND_COLLECTIBLES.length - remainCols.length + 1) * 1000000;
+  const colItem = remainCols.length === 0
+    ? '<div class="shop-empty">已集齐全部岛屿收藏品</div>'
+    : `<div class="shop-item">
+        <div class="shop-icon">🏺</div>
+        <div class="shop-info">
+          <div class="shop-name">兑换岛屿收藏品</div>
+          <div class="shop-desc">随机获得未获得的一件（剩 ${remainCols.length} 件）</div>
+        </div>
+        <button class="gold" onclick="buyIslandCollectible()" ${state.points >= colPrice ? '' : 'disabled'}>兑换 · ${colPrice.toLocaleString()}</button>
+      </div>`;
+
+  list.innerHTML = fateItem + colItem + goldItem + dropItem;
 }
 
 function grantFate(f) {
@@ -4391,6 +4696,8 @@ function renderArmory() {
   const ids = allIds.filter(id => {
     const def = WEAPON_BY_ID[id];
     if (!def) return false;
+    // 命运之武器移至「收藏品」窗口，不再显示在武器库
+    if (FATE_BY_ID[id]) return false;
     if (filter !== 'ALL' && def.rarity !== filter) return false;
     if (typeFilter !== 'ALL' && def.type !== typeFilter) return false;
     // 命运之武器 / 宇宙长剑（UR）不属于任何属性：只在「全部」下显示
@@ -4897,6 +5204,7 @@ function exchangeMedWing() {
   }
   if (state.silverGlory < 100) return;
   state.silverGlory -= 100;
+  maybeRefundSun({ silverGlory: 100 });
   invalidateStats(); // 宇宙长剑获得/升级后需要重算属性缓存
   if (!owned) {
     state.weapons[MED_WING_BLADE.id] = { level: 1 };
@@ -4921,6 +5229,7 @@ function awakenMedWing() {
   if ((state.bahamutHorn || 0) < 1) { toast('缺少巴哈姆特之角（击败原型巴哈姆特或 RANK Boss 获得）'); return; }
   state.silverGlory -= 2500;
   state.bahamutHorn -= 1;
+  maybeRefundSun({ silverGlory: 2500, bahamutHorn: 1 });
   state.medWingAwakened = true;
   invalidateStats();
   log(`⚡ 宇宙长剑突破成功！等级上限提升至 <b>Lv.80</b>，获得永续技能「宇宙的权能 I」（每拥有一把武器全属性 +0.1%）`, 'drop');
@@ -4977,6 +5286,7 @@ function awakenMedWing2() {
   if ((state.verdantCrystal || 0) < 10) { toast('缺少苍翠的结晶（需要 10）'); return; }
   state.silverGlory -= 10000;
   state.verdantCrystal -= 10;
+  maybeRefundSun({ silverGlory: 10000, verdantCrystal: 10 });
   state.medWingAwakened2 = true;
   invalidateStats();
   log('⚡ 宇宙长剑第二次突破成功！等级上限提升至 <b>Lv.100</b>，技能升级为「宇宙的权能 II」（每拥有一把 MAX 武器额外 +0.1% 全属性）', 'drop');
@@ -5029,6 +5339,7 @@ function craftBahaWeapon(id) {
   if (haveD < 40 || haveH < 5) { toast(`材料不足：${def.decayedName} ×40 + 巴哈姆特之角 ×5`); return; }
   state.decayedWeapons[def.decayedKey] -= 40;
   state.bahamutHorn -= 5;
+  maybeRefundSun({ bahamutHorn: 5 });
   state.weapons[id] = { level: 1 };
   invalidateStats();
   armoryDirty = true;
@@ -5065,11 +5376,13 @@ function upgradeBahaWeapon(id) {
     }
     state.decayedWeapons[def.decayedKey] -= 10;
     state.bahamutHorn -= 2;
+    maybeRefundSun({ bahamutHorn: 2 });
     if (elemKey) state[elemKey] -= 100;
   } else {
     if (haveD < 2 || haveH < 1) { toast(`材料不足：${def.decayedName} ×2 + 巴哈姆特之角 ×1`); return; }
     state.decayedWeapons[def.decayedKey] -= 2;
     state.bahamutHorn -= 1;
+    maybeRefundSun({ bahamutHorn: 1 });
   }
   owned.level++;
   invalidateStats();
@@ -5470,6 +5783,8 @@ function checkAchievements(silent) {
   if (state.starBeasts && (state.starBeasts.medusaKills || 0) > 0) unlockAchievement('medusa_first', silent);
   if (state.starBeasts && (state.starBeasts.seaKills || 0) > 0) unlockAchievement('sea_first', silent);
   if (state.starBeasts && (state.starBeasts.sunKills || 0) > 0) unlockAchievement('sun_first', silent);
+  if (state.starBeasts && (state.starBeasts.apolloKills || 0) > 0) unlockAchievement('apollo_first', silent);
+  if (state.starBeasts && (state.starBeasts.ovlKills || 0) > 0) unlockAchievement('ovl_first', silent);
   if (state.hardZoeKills > 0) unlockAchievement('zoe_hard_first', silent);
   if (state.vhCleared || (state.vhZoeKills || 0) > 0) unlockAchievement('zoe_vh_first', silent);
   if (state.rank >= 1) unlockAchievement('rank_1', silent);
@@ -5524,10 +5839,12 @@ function checkAchievements(silent) {
 
 // 成就所属 RANK 阶段（1-4）
 function achRankOfId(id) {
+  // 元素岛通关成就（潮汐终章 / 日珥终章）→ RANK 2（需先于下方 sea_/sun_ 的 RANK 4 判定）
+  if (/^(sea_island_|sun_island_)/.test(id)) return 2;
   // 专精岛 / 职业（RANK 4）
-  if (/^(expert_|job_|baha_hard_|rank_4$|nezha_|medusa_|sea_|sun_)/.test(id)) return 4;
+  if (/^(expert_|job_|baha_hard_|rank_4$|nezha_|medusa_|sea_|sun_|apollo_|ovl_)/.test(id)) return 4;
   // 长剑极意 / 长剑通神 / 原型之敌 → RANK 2
-  if (/^(med_wing_|bahamut_)/.test(id)) return 2;
+  if (/^(med_wing_|bahamut_|colget_)/.test(id)) return 2;
   // 翼之残影（首次击败佐伊）→ RANK 1
   if (id === 'zoe_first') return 1;
   if (/^(tenshi_|baha_|zoe_vh_|rank_3$)/.test(id)) return 3;
@@ -5535,6 +5852,56 @@ function achRankOfId(id) {
   if (/^(tiamat_hard_|ygg_hard_|levi_hard_|colo_hard_|chiv_hard_|celeste_hard_)/.test(id)) return 3;
   if (/^(zoe_|wind_island_|tiamat_|earth_island_|ygg_|sea_island_|levi_|sun_island_|colo_|light_island_|chiv_|dark_island_|celeste_|rank_2$)/.test(id)) return 2;
   return 1;
+}
+
+// ===== 收藏品面板（命运之武器 + 6 座属性岛收藏品）=====
+function renderCollectibles() {
+  let el = document.getElementById('collect-list');
+  if (!el) {
+    const host = document.getElementById('panel-ach');
+    if (!host || !host.parentNode) return;
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.id = 'panel-collect';
+    panel.innerHTML = '<div class="panel-title"><span class="ico">🏺</span> 收藏品<button class="panel-toggle" data-collapse="collect">收起</button></div><div id="collect-list"></div>';
+    host.parentNode.insertBefore(panel, host.nextSibling);
+    applyCollapsed();
+    el = document.getElementById('collect-list');
+  }
+  const fateCount = Object.keys(state.fates || {}).filter(k => state.fates[k]).length;
+  let html = `<div class="stat-name">命运之武器（${fateCount} / 10）</div>`;
+  html += FATE_WEAPONS.map(f => state.fates[f.id]
+    ? `<div class="stat-row">🏺 <b>${f.name}</b> · ${f.type} · 攻击 +${(f.bonusAtk * 100).toFixed(0)}% / 生命 +${(f.bonusHp * 100).toFixed(0)}%</div>`
+    : `<div class="stat-row">🏺 ？？？</div>`).join('');
+  html += '<div class="stat-name">岛屿收藏品</div>';
+  html += ISLAND_COLLECTIBLES.map(c => {
+    const got = !!state.collectibles[c.id];
+    return got
+      ? `<div class="stat-row">🏺 <b>${c.name}</b> · ${c.desc}</div>`
+      : `<div class="stat-row">🏺 ？？？</div>`;
+  }).join('');
+  const remainCols = ISLAND_COLLECTIBLES.filter(c => !state.collectibles[c.id]);
+  html += remainCols.length
+    ? '<div class="stat-row">🏪 可在「收藏点商店」用收藏点兑换未获得的岛屿收藏品</div>'
+    : '<div class="stat-row">✅ 已集齐全部岛屿收藏品</div>';
+  el.innerHTML = html;
+}
+
+// 收藏点兑换岛屿收藏品：首次 100 万，之后每多一件 +100 万；随机给未获得的
+function buyIslandCollectible() {
+  const remain = ISLAND_COLLECTIBLES.filter(c => !state.collectibles[c.id]);
+  if (!remain.length) { toast('已集齐全部岛屿收藏品'); return; }
+  const price = (ISLAND_COLLECTIBLES.length - remain.length + 1) * 1000000;
+  if ((state.points || 0) < price) { toast(`收藏点不足（需要 ${fmt(price)}）`); return; }
+  state.points -= price;
+  const pick = remain[Math.floor(Math.random() * remain.length)];
+  state.collectibles[pick.id] = true;
+  unlockAchievement('colget_' + pick.id);
+  log(`🏺 用 ${fmt(price)} 收藏点兑换收藏品「<b>${pick.name}</b>」！`, 'drop');
+  toast(`🏺 获得 ${pick.name}`);
+  renderCollectibles();
+  updateAll();
+  save(true);
 }
 
 function renderAchievements() {
@@ -5562,6 +5929,8 @@ function renderAchievements() {
     let name = a.name, desc = a.desc;
     // 命运之武器成就：未获得前完全隐藏（？？？）
     if (/^fateown_/.test(a.id) && !done) { name = '？？？'; desc = '第一次获得？？？'; }
+    // 收藏品成就：未获得前同样显示 ？？？
+    if (/^colget_/.test(a.id) && !done) { name = '？？？'; desc = '获得神秘的收藏品'; }
     return `<div class="ach ${done ? 'done' : ''}">
       <div class="ach-icon">${done ? '🏆' : '🔒'}</div>
       <div class="ach-info"><div class="ach-name">${name}${pts > 1 ? ` <span class="ach-pts">+${pts}</span>` : ''}</div><div class="ach-desc">${desc}</div></div>
@@ -5616,7 +5985,7 @@ function buildSaveData() {
     bossKills: state.bossKills,
     achievements: state.achievements,
     equipped: state.equipped,
-    weaponFilter: state.weaponFilter, weaponAttrFilter: state.weaponAttrFilter, weaponTypeFilter: state.weaponTypeFilter, notifyUpgrade: state.notifyUpgrade, hidePointLog: state.hidePointLog, autoAdvance: state.autoAdvance, hideAchievements: state.hideAchievements, autoBoss: state.autoBoss, autoSweep: state.autoSweep, hiddenBosses: state.hiddenBosses, hideBossReward: state.hideBossReward, hideSkillToast: state.hideSkillToast, daRate: state.daRate, taRate: state.taRate, petrifiedTurns: state.petrifiedTurns, sealTurns: state.sealTurns, hiddenBossMsgs: state.hiddenBossMsgs, zoeHard: state.zoeHard, zoeVH: state.zoeVH, vhZoeKills: state.vhZoeKills, collapsed: state.collapsed,
+    weaponFilter: state.weaponFilter, weaponAttrFilter: state.weaponAttrFilter, weaponTypeFilter: state.weaponTypeFilter, notifyUpgrade: state.notifyUpgrade, hidePointLog: state.hidePointLog, autoAdvance: state.autoAdvance, hideAchievements: state.hideAchievements, autoBoss: state.autoBoss, autoSweep: state.autoSweep, hiddenBosses: state.hiddenBosses, hideBossReward: state.hideBossReward, hideSkillToast: state.hideSkillToast, daRate: state.daRate, taRate: state.taRate, petrifiedTurns: state.petrifiedTurns, sealTurns: state.sealTurns, collectibles: state.collectibles, killCounter: state.killCounter, hiddenBossMsgs: state.hiddenBossMsgs, zoeHard: state.zoeHard, zoeVH: state.zoeVH, vhZoeKills: state.vhZoeKills, collapsed: state.collapsed,
     islandIdx: state.islandIdx, islandId: state.islandId, hiddenChapters: state.hiddenChapters, amberEyes: state.amberEyes, islandProgress: state.islandProgress, earthProgress: state.earthProgress, seaProgress: state.seaProgress, sunProgress: state.sunProgress, lightProgress: state.lightProgress, darkProgress: state.darkProgress, earthBud: state.earthBud, seaFan: state.seaFan, sunCore: state.sunCore, starPlankton: state.starPlankton, darkShard: state.darkShard, windCrystal: state.windCrystal, earthCrystal: state.earthCrystal, waterCrystal: state.waterCrystal, fireCrystal: state.fireCrystal, lightCrystal: state.lightCrystal, darkCrystal: state.darkCrystal, tiamatCleared: state.tiamatCleared, yggCleared: state.yggCleared, leviCleared: state.leviCleared, coloCleared: state.coloCleared,
     expertProgress: state.expertProgress, jobs: state.jobs, currentJob: state.currentJob, mapView: state.mapView, inMap: state.inMap, rankFight: state.rankFight, seenUnlocks: state.seenUnlocks, expertCertGiven: state.expertCertGiven, achFilter: state.achFilter,
     ...EXPERT_ISLANDS.reduce((o, e) => { o[e.elementKey] = state[e.elementKey] || 0; o[e.certKey] = state[e.certKey] || 0; return o; }, {}),
@@ -5714,6 +6083,8 @@ function applySaveData(d) {
   state.taRate = d.taRate || 0;
   state.petrifiedTurns = d.petrifiedTurns || 0;
   state.sealTurns = d.sealTurns || 0;
+  state.collectibles = (d.collectibles && typeof d.collectibles === 'object') ? d.collectibles : {};
+  state.killCounter = d.killCounter || 0;
   state.hideAchievements = d.hideAchievements === true;
   state.autoBoss = (d.autoBoss && typeof d.autoBoss === 'object') ? d.autoBoss : {};
   state.autoSweep = (d.autoSweep && typeof d.autoSweep === 'object') ? d.autoSweep : {};
@@ -5827,7 +6198,7 @@ function resetGame() {
   state = {
     currentIdx: 1, unlockedIdx: 1, progressKills: 0, kills: 0, gold: 0,
     level: 1, exp: 0,
-    points: 0, fates: {}, achievements: {}, dungeonCleared: false, expBuyLevel: 0, dropBuyLevel: 0, silverGlory: 0, bahamutHorn: 0, bahamutFirstCleared: false, sealBroken: false, decayedWeapons: {}, bahaUnlocked: false, bahaAwakened: {}, purpleHorn: 0, bahaHardFirst: false, bahaHard: false, bahaHardKills: 0, owgi: 0, owgiShield: 0, healBuffTurns: 0, owgiAuto: true, pierceTurns: 0, bowRapid: false, fistCapUp: false, dummyMode: false, starBeasts: {}, hideSkillToast: false, daRate: 0, taRate: 0, petrifiedTurns: 0, sealTurns: 0, tiamatHard: false, tiamatHardKills: 0, yggHard: false, yggHardKills: 0, leviHard: false, leviHardKills: 0, coloHard: false, coloHardKills: 0, chivHard: false, chivHardKills: 0, celesteHard: false, celesteHardKills: 0, tenshiAwakened: {}, fireFeather: 0, waterFeather: 0, earthFeather: 0, windFeather: 0, lightFeather: 0, darkFeather: 0, medWingAwakened: false, medWingAwakened2: false, vhCleared: false, verdantCrystal: 0, hardZoeKills: 0, vhZoeKills: 0, bossCooldowns: {}, rank: 0, rankFight: null, everHadPoints: false, bossKills: {}, goldBoostLevel: 0, pointDropLevel: 0, equipped: null,
+    points: 0, fates: {}, achievements: {}, dungeonCleared: false, expBuyLevel: 0, dropBuyLevel: 0, silverGlory: 0, bahamutHorn: 0, bahamutFirstCleared: false, sealBroken: false, decayedWeapons: {}, bahaUnlocked: false, bahaAwakened: {}, purpleHorn: 0, bahaHardFirst: false, bahaHard: false, bahaHardKills: 0, owgi: 0, owgiShield: 0, healBuffTurns: 0, owgiAuto: true, pierceTurns: 0, bowRapid: false, fistCapUp: false, dummyMode: false, starBeasts: {}, hideSkillToast: false, daRate: 0, taRate: 0, petrifiedTurns: 0, sealTurns: 0, collectibles: {}, killCounter: 0, tiamatHard: false, tiamatHardKills: 0, yggHard: false, yggHardKills: 0, leviHard: false, leviHardKills: 0, coloHard: false, coloHardKills: 0, chivHard: false, chivHardKills: 0, celesteHard: false, celesteHardKills: 0, tenshiAwakened: {}, fireFeather: 0, waterFeather: 0, earthFeather: 0, windFeather: 0, lightFeather: 0, darkFeather: 0, medWingAwakened: false, medWingAwakened2: false, vhCleared: false, verdantCrystal: 0, hardZoeKills: 0, vhZoeKills: 0, bossCooldowns: {}, rank: 0, rankFight: null, everHadPoints: false, bossKills: {}, goldBoostLevel: 0, pointDropLevel: 0, equipped: null,
     weaponFilter: 'ALL', weaponAttrFilter: 'ALL', weaponTypeFilter: 'ALL', notifyUpgrade: true, hidePointLog: false, autoAdvance: false, hideAchievements: false, autoBoss: {}, autoSweep: {}, hiddenBosses: {}, hideBossReward: false, hiddenBossMsgs: {}, zoeHard: false, zoeVH: false, collapsed: {},
     islandIdx: 0, islandId: 'wind', hiddenChapters: {}, amberEyes: 0, islandProgress: {}, earthProgress: {}, seaProgress: {}, sunProgress: {}, lightProgress: {}, darkProgress: {}, earthBud: 0, seaFan: 0, sunCore: 0, starPlankton: 0, darkShard: 0, windCrystal: 0, earthCrystal: 0, waterCrystal: 0, fireCrystal: 0, lightCrystal: 0, darkCrystal: 0, tiamatCleared: false, yggCleared: false, leviCleared: false, coloCleared: false,
     expertProgress: {}, jobs: {}, currentJob: null, mapView: 'main', inMap: false, seenUnlocks: {}, expertCertGiven: {}, achFilter: 'ALL',
@@ -6429,6 +6800,16 @@ function showIslandStageTip(stage, x, y) {
   }
   html += `<div class="tip-row fate-row">${cfg.materialIcon} ${cfg.material} 基础掉率 <span class="tip-p">${(base * 100).toFixed(2)}%</span></div>`;
   html += `<div class="tip-row">含加成实际掉率 <b>${(actual * 100).toFixed(2)}%</b>（成就点 + 金币掉落）</div>`;
+  // 收藏品（元素岛 1-5 关）：未获得显示 ？？？，已获得显示名字与掉率
+  if (!cfg.expert && stage >= 1 && stage <= 5) {
+    const col = ISLAND_COLLECTIBLES.find(c => c.island === cfg.id);
+    if (col) {
+      const got = !!state.collectibles[col.id];
+      html += got
+        ? `<div class="tip-row">🏺 <b>${col.name}</b> 独立掉率 <span class="tip-p">0.01%</span>（已获得）</div>`
+        : `<div class="tip-row">🏺 ？？？ 独立掉率 <span class="tip-p">0.01%</span></div>`;
+    }
+  }
   areaTip.innerHTML = html;
   areaTip.classList.add('show');
   areaTip.style.left = Math.min(x + 14, window.innerWidth - 360) + 'px';
@@ -6462,9 +6843,11 @@ function showStarBeastTip(id, x, y) {
   const isMedusaTip = sb.id === 'earth';
   const isSeaTip = sb.id === 'sea';
   const isSunTip = sb.id === 'sun';
-  const tipList = isSunTip ? SUN_WEAPONS : (isSeaTip ? SEA_WEAPONS : (isMedusaTip ? MEDUSA_WEAPONS : NEZHA_WEAPONS));
-  const tipIsland = isSunTip ? 'sun' : (isSeaTip ? 'sea' : (isMedusaTip ? 'earth' : 'wind'));
-  const tipMatName = isSunTip ? '日珥反应炉' : (isSeaTip ? '海神的扇尾' : (isMedusaTip ? '创树的花蕾' : '岚龙的琥珀眼'));
+  const isApolloTip = sb.id === 'light';
+  const isOvlTip = sb.id === 'dark';
+  const tipList = isOvlTip ? OVL_WEAPONS : (isApolloTip ? APOLLO_WEAPONS : (isSunTip ? SUN_WEAPONS : (isSeaTip ? SEA_WEAPONS : (isMedusaTip ? MEDUSA_WEAPONS : NEZHA_WEAPONS))));
+  const tipIsland = isOvlTip ? 'dark' : (isApolloTip ? 'light' : (isSunTip ? 'sun' : (isSeaTip ? 'sea' : (isMedusaTip ? 'earth' : 'wind'))));
+  const tipMatName = isOvlTip ? '黑雾的结晶' : (isApolloTip ? '星星浮游体' : (isSunTip ? '日珥反应炉' : (isSeaTip ? '海神的扇尾' : (isMedusaTip ? '创树的花蕾' : '岚龙的琥珀眼'))));
   tipList.forEach(w => {
     html += `<div class="tip-row">⚔ ${w.name} 基础 0.04% → 实际 <b>${(0.0004 * nBoost * 100).toFixed(2)}%</b></div>`;
   });
